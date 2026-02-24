@@ -1,240 +1,179 @@
-# Life OS Web Application - Development Plan
+# Unit 1: Checklist Management System - DDD Domain Model Design Plan
 
-## Phase 1: User Stories Documentation
-- [x] **1.1** Create /inception/ directory structure
-- [x] **1.2** Write comprehensive user stories in /inception/overview_user_stories.md
-  - User stories for Checklist Modules (Chore Board, Self-Care, Logistics, Bathroom)
-  - User stories for Ritual Modules (Bath Ritual with conditional logic)
-  - User stories for Inventory Trackers (Fridge, Dry Goods, First-Aid)
-  - User stories for QR-triggered routing and dynamic module loading
-  - User stories for Data Persistence and Auto-Reset functionality
-  - User stories for Neurodivergent-friendly UX features
-- [x] **1.3** Define acceptance criteria for each user story
-- [x] **1.4** Document edge cases and error scenarios
-
-## Phase 2: Unit Architecture & Integration Planning
-- [x] **2.1** Analyze user stories and identify cohesive groupings
-- [x] **2.2** Define independent units with clear responsibilities
-- [x] **2.3** Create unit-specific user story documents in /inception/units/
-- [x] **2.4** Define API contracts and integration points
-- [x] **2.5** Document data models for each unit
-- [x] **2.6** Create integration_contract.md with endpoint definitions
-
-## Phase 3: Technical Architecture & Schema
-- [ ] **3.1** Design database schema for each unit
-- [ ] **3.2** Plan data persistence strategy (Google Sheets API or Supabase)
-- [ ] **3.3** Design QR code routing strategy (/area/kitchen, /area/bathroom, etc.)
-- [ ] **3.4** Plan auto-reset and consistency tracking logic
-
-## Phase 4: Implementation Planning
-- [ ] **4.1** Create implementation roadmap with sprint breakdown
-- [ ] **4.2** Identify inter-unit dependencies
-- [ ] **4.3** Plan testing strategy (unit, integration, e2e)
-- [ ] **4.4** Define accessibility compliance requirements
+## Overview
+Design a comprehensive Domain Driven Design domain model for the Checklist Management Service (Unit 1) with all tactical components including aggregates, entities, value objects, domain events, policies, repositories, and domain services.
 
 ---
 
-## Proposed Unit Architecture (Pending Your Approval)
+## Phase 1: Domain Analysis & Ubiquitous Language
+- [x] **1.1** Analyze user stories to identify core domain concepts
+- [x] **1.2** Define Ubiquitous Language
+- [x] **1.3** Identify domain events
 
-### Unit 1: Checklist Management Service
-**Responsibility:** Handle all checklist-based modules (Chore Board, Self-Care, Logistics, Bathroom)
-**User Stories:** US-2.1 through US-5.1, US-14.1 through US-14.3
-**Key Features:**
-- Daily/Weekly/Bi-weekly/Monthly task management
-- Low Energy toggle mode
-- Task completion tracking
-- Add/Edit/Remove items
-- Auto-reset at 12:00 AM
+## Phase 2: Aggregate Design
+- [x] **2.1** Identify aggregate roots
+- [x] **2.2** Design Checklist Aggregate
+- [x] **2.3** Design ChecklistItem Entity
+- [x] **2.4** Design ChecklistType Value Object
+- [x] **2.5** Design Category Value Object
 
-**API Endpoints (Proposed):**
-- `GET /api/checklists/:type` - Fetch checklist by type
-- `POST /api/checklists/:type/items` - Add item to checklist
-- `PUT /api/checklists/:type/items/:id` - Update item
-- `DELETE /api/checklists/:type/items/:id` - Remove item
-- `PATCH /api/checklists/:type/items/:id/complete` - Mark item complete
-- `POST /api/checklists/reset` - Trigger reset (internal)
+## Phase 3: Value Objects Design
+- [x] **3.1** Design ChecklistItemId Value Object
+- [x] **3.2** Design ChecklistId Value Object
+- [x] **3.3** Design CompletionStatus Value Object
+- [x] **3.4** Design LowEnergyMode Value Object
+- [x] **3.5** Design ResetCycle Value Object
+- [x] **3.6** Design CompletionPercentage Value Object
+- [x] **3.7** Design ItemOrder Value Object
 
-**Dependencies:** Consistency Tracking Service (for archival)
+## Phase 4: Domain Events Design
+- [x] **4.1** Design ChecklistCreatedEvent
+- [x] **4.2** Design ChecklistItemAddedEvent
+- [x] **4.3** Design ChecklistItemCompletedEvent
+- [x] **4.4** Design ChecklistItemUncompletedEvent
+- [x] **4.5** Design ChecklistItemEditedEvent
+- [x] **4.6** Design ChecklistItemDeletedEvent
+- [x] **4.7** Design ChecklistResetEvent
+- [x] **4.8** Design LowEnergyModeToggledEvent
+- [x] **4.9** Design ChecklistArchivedEvent
 
----
+## Phase 5: Repository Design
+- [x] **5.1** Design ChecklistRepository Interface
+- [x] **5.2** Design ChecklistItemRepository Interface
+- [x] **5.3** Design ChecklistArchiveRepository Interface
 
-### Unit 2: Ritual Management Service
-**Responsibility:** Handle ritual modules with conditional logic (Bath Ritual)
-**User Stories:** US-6.1, US-6.2, US-14.1 through US-14.3
-**Key Features:**
-- Day-of-week conditional logic (MWFSat vs TTHSun)
-- Sequential step tracking
-- Product rotation management
-- Add/Edit/Remove ritual steps
-- Completion tracking
+## Phase 6: Domain Services Design
+- [x] **6.1** Design ChecklistResetService
+- [x] **6.2** Design ChecklistCompletionService
+- [x] **6.3** Design LowEnergyModeService
+- [x] **6.4** Design ChecklistItemManagementService
+- [x] **6.5** Design ChecklistValidationService
 
-**API Endpoints (Proposed):**
-- `GET /api/rituals/:type` - Fetch ritual by type
-- `GET /api/rituals/:type/today` - Fetch today's ritual variant
-- `POST /api/rituals/:type/steps` - Add step to ritual
-- `PUT /api/rituals/:type/steps/:id` - Update step
-- `DELETE /api/rituals/:type/steps/:id` - Remove step
-- `PATCH /api/rituals/:type/steps/:id/complete` - Mark step complete
+## Phase 7: Policies & Business Rules
+- [x] **7.1** Define ChecklistResetPolicy
+- [x] **7.2** Define LowEnergyModePolicy
+- [x] **7.3** Define CompletionPolicy
+- [x] **7.4** Define ItemManagementPolicy
+- [x] **7.5** Define ArchivalPolicy
 
-**Dependencies:** Consistency Tracking Service (for archival)
+## Phase 8: Bounded Context Definition
+- [x] **8.1** Define Checklist Management Bounded Context
+- [x] **8.2** Define Context Relationships
+- [x] **8.3** Define Anti-Corruption Layer
 
----
+## Phase 9: Aggregate Lifecycle & State Transitions
+- [x] **9.1** Design Checklist Aggregate Lifecycle
+- [x] **9.2** Design ChecklistItem Entity Lifecycle
+- [x] **9.3** Define State Transition Rules
 
-### Unit 3: Inventory Management Service
-**Responsibility:** Handle all inventory trackers (Fridge, Dry Goods, First-Aid)
-**User Stories:** US-7.1 through US-7.3, US-8.1, US-8.2, US-9.1, US-14.1 through US-14.4
-**Key Features:**
-- Status-based tracking (Low/Half/Full)
-- Expiry date management
-- Quantity tracking
-- Recipe generator
-- Add/Edit/Remove items
-- Bulk operations
+## Phase 10: Integration & External Dependencies
+- [x] **10.1** Define Consistency Tracking Integration
+- [x] **10.2** Define UI Component Integration
+- [x] **10.3** Define Persistence Integration
 
-**API Endpoints (Proposed):**
-- `GET /api/inventory/:type` - Fetch inventory by type
-- `POST /api/inventory/:type/items` - Add item
-- `PUT /api/inventory/:type/items/:id` - Update item
-- `DELETE /api/inventory/:type/items/:id` - Remove item
-- `PATCH /api/inventory/:type/items/:id/status` - Update status
-- `POST /api/inventory/bulk-update` - Bulk update items
-- `GET /api/recipes` - Get recipe suggestions based on fridge inventory
+## Phase 11: Error Handling & Exceptions
+- [x] **11.1** Define Domain Exceptions
+- [x] **11.2** Define Exception Handling Policies
 
-**Dependencies:** None (standalone)
-
----
-
-### Unit 4: QR Routing & Module Loader Service
-**Responsibility:** Handle QR code routing and dynamic module loading
-**User Stories:** US-1.1
-**Key Features:**
-- Dynamic route handling (/area/kitchen, /area/bathroom, /area/desk, /area/door)
-- Module type detection
-- Context-aware module loading
-- QR code parameter parsing
-
-**API Endpoints (Proposed):**
-- `GET /api/modules/:area` - Get module for area
-- `GET /api/qr-config/:code` - Get QR code configuration
-
-**Dependencies:** Checklist Service, Ritual Service, Inventory Service
+## Phase 12: Documentation & Specification
+- [x] **12.1** Create comprehensive domain_model.md document
+- [x] **12.2** Document design decisions
+- [x] **12.3** Create visual diagrams
 
 ---
 
-### Unit 5: Data Persistence & Consistency Tracking Service
-**Responsibility:** Handle backend data persistence, auto-reset, and consistency tracking
-**User Stories:** US-10.1, US-10.2, US-10.3, US-11.1, US-11.2
-**Key Features:**
-- Backend data sync (Google Sheets API or Supabase)
-- Daily auto-reset at 12:00 AM
-- Consistency log archival
-- Streak calculation
-- Completion rate tracking
-- Dopamine-driven feedback
+## Critical Decisions - APPROVED ✅
 
-**API Endpoints (Proposed):**
-- `POST /api/consistency/sync` - Sync data to backend
-- `GET /api/consistency/streaks` - Get current streaks
-- `GET /api/consistency/history` - Get historical data
-- `POST /api/consistency/archive` - Archive completion data
-- `GET /api/consistency/dashboard` - Get dashboard data
-- `POST /api/consistency/reset` - Trigger daily reset
-
-**Dependencies:** All other services (receives data from them)
+1. **Aggregate Root:** Checklist as aggregate root with ChecklistItem as child entity ✅
+2. **Repository Pattern:** Unified ChecklistRepository (items accessed through Checklist) ✅
+3. **Anti-Corruption Layer:** Yes, to isolate domain from Google Sheets API changes ✅
+4. **Event Publishing:** Asynchronous for better performance and decoupling ✅
+5. **Timezone Handling:** Application layer handles conversion, domain works with UTC internally ✅
+6. **Timezone Specification:** Singapore Time (SGT, UTC+8) - same as Philippines ✅
 
 ---
 
-### Unit 6: Neurodivergent-Friendly UX Service
-**Responsibility:** Handle UI/UX components and accessibility features
-**User Stories:** US-12.1, US-12.2, US-12.3
-**Key Features:**
-- High-contrast UI components
-- Clear visual hierarchy
-- Status indicators
-- Accessibility compliance (WCAG AA)
-- Dark mode support
-- Keyboard navigation
+## Timezone Implementation Notes
 
-**API Endpoints (Proposed):**
-- `GET /api/ui/theme` - Get current theme
-- `POST /api/ui/theme` - Update theme preference
-- `GET /api/ui/accessibility` - Get accessibility settings
+**Singapore Time (SGT) Specifications:**
+- UTC Offset: UTC+8
+- No Daylight Saving Time (DST)
+- Reset times in SGT:
+  - Daily reset: 12:00 AM SGT (00:00 SGT)
+  - Weekly reset: Sunday 12:00 AM SGT
+  - Bi-weekly reset: Every other Sunday 12:00 AM SGT
+  - Monthly reset: 1st of month 12:00 AM SGT
 
-**Dependencies:** None (shared library/component service)
-
----
-
-### Unit 7: Hosting & Performance Service
-**Responsibility:** Handle Vercel hosting, offline support, and performance optimization
-**User Stories:** US-13.1, US-13.2
-**Key Features:**
-- Vercel deployment
-- Service worker for offline support
-- Data caching strategy
-- Performance monitoring
-- Offline queue management
-
-**API Endpoints (Proposed):**
-- `GET /api/sync-status` - Get sync status
-- `POST /api/offline-queue` - Queue offline changes
-- `GET /api/performance-metrics` - Get performance data
-
-**Dependencies:** Data Persistence Service (for sync)
+**Domain Model Timezone Handling:**
+- All timestamps stored in UTC internally
+- Application layer converts SGT to UTC before domain operations
+- Application layer converts UTC back to SGT for display
+- Domain aware of UTC, but doesn't handle SGT conversion
+- Reset times calculated in UTC equivalent of SGT midnight
 
 ---
 
-## Critical Decisions Needed
+## Status: ✅ APPROVED - Ready to Execute
 
-1. **Backend Choice:** Google Sheets API or Supabase?
-   - *Note: This affects Unit 5 implementation significantly*
+Proceeding with Phase 1 execution to create comprehensive domain_model.md document in /construction/unit-1-checklist-management/domain_model.md
 
-2. **Unit Boundaries:** Are the proposed units appropriate?
-   - *Note: Should any units be merged or split?*
-
-3. **API Communication:** Should units communicate via REST APIs or direct function calls?
-   - *Note: This affects integration contract design*
-
-4. **Shared Components:** Should UX components be a separate unit or embedded in each service?
-   - *Note: Affects modularity and reusability*
 
 ---
 
-## Status: ⏳ Awaiting Your Review & Approval
+## Status: ✅ PHASE COMPLETE - Domain Model Design Finished
 
-Please review the proposed unit architecture and provide:
-1. Confirmation on unit boundaries and responsibilities
-2. Answers to critical decisions listed above
-3. Any adjustments to the proposed units
-4. Approval to proceed with Phase 2
+All 12 phases completed successfully. Comprehensive DDD domain model created for Unit 1: Checklist Management Service.
 
-### Checklist Modules:
-- **Chore Board**: Daily, Weekly (Sunday reset), Bi-weekly, Monthly tasks + Low Energy mode (4 fallback tasks)
-- **Self-Care Board**: Morning and Evening routines
-- **Logistics**: Gym Checklist (Desk-triggered), RTO Checklist (Door-triggered)
-- **Bathroom Cleaning**: Detailed sanitization sub-tasks
+### Deliverable Location
+`/construction/unit-1-checklist-management/domain_model.md`
 
-### Ritual Modules:
-- **Bath Ritual**: MWFSat vs TTHSun product rotations → universal post-bath steps (oil/lotion/perfume)
+### Document Contents (16 Sections)
+1. Executive Summary
+2. Ubiquitous Language (13 core terms)
+3. Bounded Context Definition
+4. Aggregate Design (Checklist as root)
+5. Entities (ChecklistItem)
+6. Value Objects (10 value objects)
+7. Domain Events (9 event types)
+8. Repositories (ChecklistRepository interface)
+9. Domain Services (5 services)
+10. Business Rules & Policies (5 policies)
+11. Anti-Corruption Layer
+12. Event Publishing (Asynchronous)
+13. Aggregate Lifecycle & State Transitions
+14. Integration Points
+15. Error Handling & Exceptions
+16. Design Decisions & Rationale
 
-### Inventory Trackers:
-- **Fridge/Freezer**: Ingredients, cooked food with "good until" dates, recipe generator
-- **Dry Goods & Non-Food**: Low/Half/Full status levels
-- **First-Aid**: Quantities and expiry dates
+### Key Features
+- ✅ Checklist as aggregate root with ChecklistItem as child entity
+- ✅ Unified ChecklistRepository for data access
+- ✅ Anti-Corruption Layer for Google Sheets API
+- ✅ Asynchronous domain event publishing
+- ✅ Singapore Time (UTC+8) timezone handling
+- ✅ Application layer timezone conversion
+- ✅ Soft delete for data recovery
+- ✅ Strong consistency guarantees
+- ✅ 9 domain events defined
+- ✅ 5 domain services specified
+- ✅ 5 business rule policies documented
+- ✅ 7 domain exceptions defined
 
-### Technical Requirements:
-- Routing: Dynamic QR-triggered routes (/area/kitchen, /area/bathroom, etc.)
-- Persistence: Google Sheets API or Supabase integration
-- Auto-Reset: Daily at 12:00 AM with consistency log archival
-- UX: Neurodivergent-friendly with high-contrast status indicators
+### Singapore Time Implementation
+- Daily reset: 12:00 AM SGT (00:00 SGT)
+- Weekly reset: Sunday 12:00 AM SGT
+- Bi-weekly reset: Every other Sunday 12:00 AM SGT
+- Monthly reset: 1st of month 12:00 AM SGT
+- All timestamps stored in UTC internally
+- Application layer converts SGT ↔ UTC
 
 ---
 
-## Status: ⏳ Awaiting Your Review & Approval
+## Next Steps
 
-This plan will:
-1. Group user stories into 7 independent, loosely-coupled units
-2. Create unit-specific user story documents
-3. Define API contracts and integration points
-4. Enable parallel development by multiple teams
-
-**Ready to review the proposed unit architecture?** ✅
+The domain model is complete and ready for:
+1. Implementation planning
+2. API design based on domain services
+3. Database schema design
+4. Test strategy development
+5. Code generation from domain model
