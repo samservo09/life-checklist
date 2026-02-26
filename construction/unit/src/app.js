@@ -88,21 +88,51 @@ function renderChoresBoard() {
     items = stateManager.getLowEnergyItems();
   }
   
-  // Group by category
+  // Group by frequency
+  const frequencyOrder = ['daily', 'weekly', 'biweekly', 'monthly'];
   const grouped = {};
-  items.forEach(item => {
-    if (!grouped[item.category]) grouped[item.category] = [];
-    grouped[item.category].push(item);
+  
+  frequencyOrder.forEach(freq => {
+    grouped[freq] = [];
   });
   
-  Object.entries(grouped).forEach(([category, categoryItems]) => {
-    const categoryTitle = createElement('h3', 'font-bold text-primary-pink mt-4 mb-2 text-sm uppercase');
-    categoryTitle.textContent = `${category}`;
-    itemsContainer.appendChild(categoryTitle);
+  items.forEach(item => {
+    const freq = item.frequency || 'daily';
+    if (!grouped[freq]) grouped[freq] = [];
+    grouped[freq].push(item);
+  });
+  
+  // Render grouped items with frequency headers
+  const frequencyEmojis = {
+    'daily': '📅',
+    'weekly': '📆',
+    'biweekly': '📊',
+    'monthly': '📈'
+  };
+  
+  const frequencyLabels = {
+    'daily': 'Daily',
+    'weekly': 'Weekly',
+    'biweekly': 'Bi-weekly',
+    'monthly': 'Monthly'
+  };
+  
+  frequencyOrder.forEach(frequency => {
+    const frequencyItems = grouped[frequency];
     
-    categoryItems.forEach(item => {
-      itemsContainer.appendChild(renderChecklistItem(item, CONFIG.BOARDS.CHORES, () => renderChoresBoard()));
-    });
+    const frequencyTitle = createElement('h3', 'font-bold text-primary-pink mt-4 mb-2 text-sm uppercase');
+    frequencyTitle.textContent = `${frequencyEmojis[frequency]} ${frequencyLabels[frequency]}`;
+    itemsContainer.appendChild(frequencyTitle);
+    
+    if (frequencyItems.length === 0) {
+      const empty = createElement('div', 'text-gray-400 text-sm italic');
+      empty.textContent = 'No items';
+      itemsContainer.appendChild(empty);
+    } else {
+      frequencyItems.forEach(item => {
+        itemsContainer.appendChild(renderChecklistItem(item, CONFIG.BOARDS.CHORES, () => renderChoresBoard()));
+      });
+    }
   });
   
   container.appendChild(itemsContainer);
@@ -286,6 +316,75 @@ function renderFirstAidBoard() {
     container.appendChild(empty);
   }
   
+  app.appendChild(container);
+}
+
+// Gym Board
+function renderGymBoard() {
+  const app = document.getElementById('app');
+  clearElement(app);
+  
+  const container = createElement('div', 'max-w-2xl mx-auto p-4');
+  container.appendChild(renderHeader('gym'));
+  
+  const board = stateManager.getBoard(CONFIG.BOARDS.GYM);
+  
+  container.appendChild(renderCompletionPercentage(board.completionPercentage));
+  container.appendChild(renderAddItemForm(CONFIG.BOARDS.GYM, CONFIG.ITEM_TYPES.CHECKLIST, () => renderGymBoard()));
+  
+  const itemsContainer = createElement('div');
+  
+  board.items.forEach(item => {
+    itemsContainer.appendChild(renderChecklistItem(item, CONFIG.BOARDS.GYM, () => renderGymBoard()));
+  });
+  
+  container.appendChild(itemsContainer);
+  app.appendChild(container);
+}
+
+// RTO (Return to Office) Board
+function renderRTOBoard() {
+  const app = document.getElementById('app');
+  clearElement(app);
+  
+  const container = createElement('div', 'max-w-2xl mx-auto p-4');
+  container.appendChild(renderHeader('rto'));
+  
+  const board = stateManager.getBoard(CONFIG.BOARDS.RTO);
+  
+  container.appendChild(renderCompletionPercentage(board.completionPercentage));
+  container.appendChild(renderAddItemForm(CONFIG.BOARDS.RTO, CONFIG.ITEM_TYPES.CHECKLIST, () => renderRTOBoard()));
+  
+  const itemsContainer = createElement('div');
+  
+  board.items.forEach(item => {
+    itemsContainer.appendChild(renderChecklistItem(item, CONFIG.BOARDS.RTO, () => renderRTOBoard()));
+  });
+  
+  container.appendChild(itemsContainer);
+  app.appendChild(container);
+}
+
+// Bathroom Clean Board
+function renderBathroomCleanBoard() {
+  const app = document.getElementById('app');
+  clearElement(app);
+  
+  const container = createElement('div', 'max-w-2xl mx-auto p-4');
+  container.appendChild(renderHeader('bathroom-clean'));
+  
+  const board = stateManager.getBoard(CONFIG.BOARDS.BATHROOM_CLEAN);
+  
+  container.appendChild(renderCompletionPercentage(board.completionPercentage));
+  container.appendChild(renderAddItemForm(CONFIG.BOARDS.BATHROOM_CLEAN, CONFIG.ITEM_TYPES.CHECKLIST, () => renderBathroomCleanBoard()));
+  
+  const itemsContainer = createElement('div');
+  
+  board.items.forEach(item => {
+    itemsContainer.appendChild(renderChecklistItem(item, CONFIG.BOARDS.BATHROOM_CLEAN, () => renderBathroomCleanBoard()));
+  });
+  
+  container.appendChild(itemsContainer);
   app.appendChild(container);
 }
 

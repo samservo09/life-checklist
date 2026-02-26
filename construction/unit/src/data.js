@@ -5,6 +5,7 @@ class ChecklistItem {
     this.id = id;
     this.name = name;
     this.category = category;
+    this.frequency = category; // For chores, frequency = category
     this.completed = completed;
     this.completedAt = null;
     this.notes = '';

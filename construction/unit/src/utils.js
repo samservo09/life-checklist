@@ -205,7 +205,7 @@ function addItem(boardType, item) {
   
   // Generate ID if not provided
   if (!item.id) {
-    item.id = `${boardType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    item.id = `${boardType}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
   
   board.items.push(item);
@@ -218,6 +218,11 @@ function addItem(boardType, item) {
   
   saveData(data);
   showNotification(`✅ Added: ${item.name}`);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 function editItem(boardType, itemId, updates) {
@@ -240,6 +245,11 @@ function editItem(boardType, itemId, updates) {
   
   saveData(data);
   showNotification(`✏️ Updated: ${item.name}`);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 function deleteItem(boardType, itemId) {
@@ -262,6 +272,11 @@ function deleteItem(boardType, itemId) {
   
   saveData(data);
   showNotification(`🗑️ Deleted: ${item.name}`);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 function updateItem(boardType, itemId, updates) {
@@ -283,6 +298,11 @@ function updateItem(boardType, itemId, updates) {
   updateCompletionPercentage(boardType, data);
   
   saveData(data);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 function toggleItem(boardType, itemId) {
@@ -305,6 +325,11 @@ function toggleItem(boardType, itemId) {
   updateCompletionPercentage(boardType, data);
   
   saveData(data);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 // ============================================
@@ -378,6 +403,11 @@ function toggleLowEnergyMode(enabled) {
   const data = loadData();
   data.boards.chores.lowEnergyMode = enabled;
   saveData(data);
+  
+  // Re-render the current view
+  if (typeof router === 'function') {
+    router();
+  }
 }
 
 function getLowEnergyItems() {

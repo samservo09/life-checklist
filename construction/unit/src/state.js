@@ -34,57 +34,75 @@ class StateManager {
       boards: {
         chores: {
           items: [
-            { id: 1, text: "Meal prep baon", done: false, type: "daily" },
-            { id: 2, text: "Dishes", done: false, type: "daily" },
-            { id: 3, text: "Wipe desk", done: false, type: "low-energy" }
-          ]
+            { id: 1, text: "Meal prep baon", done: false, name: "Meal prep baon", category: "daily", frequency: "daily", completed: false },
+            { id: 2, text: "Dishes", done: false, name: "Dishes", category: "daily", frequency: "daily", completed: false },
+            { id: 3, text: "Wipe desk", done: false, name: "Wipe desk", category: "daily", frequency: "daily", completed: false },
+            { id: 4, text: "Floor sweep", done: false, name: "Floor sweep", category: "daily", frequency: "daily", completed: false },
+            { id: 5, text: "Clean toilet", done: false, name: "Clean toilet", category: "weekly", frequency: "weekly", completed: false },
+            { id: 6, text: "Mop floor", done: false, name: "Mop floor", category: "weekly", frequency: "weekly", completed: false },
+            { id: 7, text: "Laundry", done: false, name: "Laundry", category: "biweekly", frequency: "biweekly", completed: false },
+            { id: 8, text: "Check pantry stock", done: false, name: "Check pantry stock", category: "biweekly", frequency: "biweekly", completed: false },
+            { id: 9, text: "Deep clean fridge", done: false, name: "Deep clean fridge", category: "monthly", frequency: "monthly", completed: false },
+            { id: 10, text: "Declutter", done: false, name: "Declutter", category: "monthly", frequency: "monthly", completed: false }
+          ],
+          lowEnergyMode: false,
+          completionPercentage: 0
         },
         gym: {
           items: [
-            { id: 1, text: "Water bottle", done: false },
-            { id: 2, text: "Gym ID", done: false }
-          ]
+            { id: 1, text: "Water bottle", done: false, name: "Water bottle", completed: false },
+            { id: 2, text: "Gym ID", done: false, name: "Gym ID", completed: false }
+          ],
+          completionPercentage: 0
         },
         selfCare: {
           items: [
-            { id: 1, text: "Morning skincare", done: false },
-            { id: 2, text: "Evening routine", done: false }
-          ]
+            { id: 1, text: "Morning skincare", done: false, name: "Morning skincare", category: "morning", completed: false },
+            { id: 2, text: "Evening routine", done: false, name: "Evening routine", category: "evening", completed: false }
+          ],
+          completionPercentage: 0
         },
         bathRitual: {
           items: [
-            { id: 1, text: "Bath prep", done: false }
-          ]
+            { id: 1, text: "Bath prep", done: false, name: "Bath prep", daySchedule: "universal", completed: false }
+          ],
+          completionPercentage: 0
         },
         fridge: {
           items: [
-            { id: 1, text: "Check expiry dates", done: false }
-          ]
+            { id: 1, text: "Check expiry dates", done: false, name: "Check expiry dates", status: "half", completed: false }
+          ],
+          completionPercentage: 0
         },
         nonFood: {
           items: [
-            { id: 1, text: "Organize supplies", done: false }
-          ]
+            { id: 1, text: "Organize supplies", done: false, name: "Organize supplies", status: "half", completed: false }
+          ],
+          completionPercentage: 0
         },
         bathroomClean: {
           items: [
-            { id: 1, text: "Clean mirror", done: false }
-          ]
+            { id: 1, text: "Clean mirror", done: false, name: "Clean mirror", completed: false }
+          ],
+          completionPercentage: 0
         },
         pantry: {
           items: [
-            { id: 1, text: "Stock check", done: false }
-          ]
+            { id: 1, text: "Stock check", done: false, name: "Stock check", status: "half", completed: false }
+          ],
+          completionPercentage: 0
         },
         rto: {
           items: [
-            { id: 1, text: "Prepare for RTO", done: false }
-          ]
+            { id: 1, text: "Prepare for RTO", done: false, name: "Prepare for RTO", completed: false }
+          ],
+          completionPercentage: 0
         },
         firstAid: {
           items: [
-            { id: 1, text: "Check first aid kit", done: false }
-          ]
+            { id: 1, text: "Check first aid kit", done: false, name: "Check first aid kit", status: "half", completed: false }
+          ],
+          completionPercentage: 0
         }
       },
       consistencyLog: []

@@ -60,15 +60,62 @@ function renderChecklistItem(item, boardType, onToggle, onEdit, onDelete) {
   checkbox.type = 'checkbox';
   checkbox.checked = item.completed;
   checkbox.onchange = () => {
+    // Toggle item and re-render
     stateManager.toggleItem(boardType, item.id);
-    onToggle && onToggle();
+    if (typeof router === 'function') {
+      router();
+    }
   };
   
   const content = createElement('div', 'flex-1 min-w-0');
   
-  const name = createElement('div', item.completed ? 'font-medium line-through text-gray-400' : 'font-medium text-white');
+  const nameContainer = createElement('div', 'flex items-center gap-2');
+  const name = createElement('div', item.completed ? 'font-medium line-through text-gray-400 flex-1' : 'font-medium text-white flex-1');
   name.textContent = item.name;
-  content.appendChild(name);
+  nameContainer.appendChild(name);
+  
+  // Edit button for inline editing
+  const editNameBtn = createElement('button', 'text-xs px-1 py-0 rounded hover:bg-white/10 transition');
+  editNameBtn.textContent = '✏️';
+  editNameBtn.onclick = () => {
+    // Enter edit mode for name
+    nameContainer.innerHTML = '';
+    const nameInput = createElement('input', 'flex-1 px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-sm');
+    nameInput.type = 'text';
+    nameInput.value = item.name;
+    nameInput.focus();
+    
+    const saveBtn = createElement('button', 'ml-1 px-2 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-xs');
+    saveBtn.textContent = '💾';
+    saveBtn.onclick = () => {
+      if (nameInput.value.trim()) {
+        stateManager.updateItem(boardType, item.id, { name: nameInput.value.trim() });
+        if (typeof router === 'function') {
+          router();
+        }
+      }
+    };
+    
+    const cancelBtn = createElement('button', 'ml-1 px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-xs');
+    cancelBtn.textContent = '✖️';
+    cancelBtn.onclick = () => {
+      // Revert by re-rendering
+      if (typeof router === 'function') {
+        router();
+      }
+    };
+    
+    nameContainer.appendChild(nameInput);
+    nameContainer.appendChild(saveBtn);
+    nameContainer.appendChild(cancelBtn);
+    
+    nameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') saveBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    };
+  };
+  nameContainer.appendChild(editNameBtn);
+  content.appendChild(nameContainer);
   
   if (item.notes) {
     const notes = createElement('div', 'text-sm text-gray-400 mt-1');
@@ -84,17 +131,14 @@ function renderChecklistItem(item, boardType, onToggle, onEdit, onDelete) {
   
   const actions = createElement('div', 'flex gap-2 flex-shrink-0');
   
-  const editBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-white/10 transition');
-  editBtn.textContent = '✏️';
-  editBtn.onclick = () => onEdit && onEdit(item);
-  actions.appendChild(editBtn);
-  
   const deleteBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-red-500/20 transition');
   deleteBtn.textContent = '🗑️';
   deleteBtn.onclick = () => {
     if (confirm('Delete this item?')) {
       stateManager.deleteItem(boardType, item.id);
-      onDelete && onDelete();
+      if (typeof router === 'function') {
+        router();
+      }
     }
   };
   actions.appendChild(deleteBtn);
@@ -110,25 +154,68 @@ function renderChecklistItem(item, boardType, onToggle, onEdit, onDelete) {
 function renderInventoryItem(item, boardType, onUpdate) {
   const row = createElement('tr', 'border-b border-white/10 hover:bg-white/5 transition');
   
-  // Item Name
+  // Item Name (Editable)
   const nameCell = createElement('td', 'p-3 font-medium text-white');
-  nameCell.textContent = item.name;
+  const nameDisplay = createElement('span', 'cursor-pointer hover:text-primary-pink transition');
+  nameDisplay.textContent = item.name;
+  nameDisplay.onclick = () => {
+    // Enter edit mode
+    nameCell.innerHTML = '';
+    const nameInput = createElement('input', 'w-full px-2 py-1 rounded bg-white/10 border border-white/20 text-white');
+    nameInput.type = 'text';
+    nameInput.value = item.name;
+    nameInput.focus();
+    
+    const saveBtn = createElement('button', 'ml-2 px-2 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-xs');
+    saveBtn.textContent = '💾';
+    saveBtn.onclick = () => {
+      if (nameInput.value.trim()) {
+        stateManager.updateItem(boardType, item.id, { name: nameInput.value.trim() });
+        if (typeof router === 'function') {
+          router();
+        }
+      }
+    };
+    
+    const cancelBtn = createElement('button', 'ml-1 px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-xs');
+    cancelBtn.textContent = '✖️';
+    cancelBtn.onclick = () => {
+      if (typeof router === 'function') {
+        router();
+      }
+    };
+    
+    nameCell.appendChild(nameInput);
+    nameCell.appendChild(saveBtn);
+    nameCell.appendChild(cancelBtn);
+    
+    nameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') saveBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    };
+  };
+  nameCell.appendChild(nameDisplay);
   row.appendChild(nameCell);
   
   // Status Dropdown
   const statusCell = createElement('td', 'p-3');
   const statusSelect = createElement('select', 'px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs');
-  statusSelect.value = item.status || 'half';
-  statusSelect.onchange = (e) => {
-    stateManager.updateItem(boardType, item.id, { status: e.target.value });
-    onUpdate && onUpdate();
-  };
   
   CONFIG.INVENTORY_STATUS.forEach(status => {
     const option = createElement('option');
     option.value = status;
     option.textContent = status.charAt(0).toUpperCase() + status.slice(1);
     statusSelect.appendChild(option);
+  });
+  
+  statusSelect.value = item.status || 'half';
+  
+  statusSelect.addEventListener('change', (e) => {
+    console.log('Status changed to:', e.target.value);
+    stateManager.updateItem(boardType, item.id, { status: e.target.value });
+    if (typeof router === 'function') {
+      router();
+    }
   });
   
   statusCell.appendChild(statusSelect);
@@ -139,10 +226,13 @@ function renderInventoryItem(item, boardType, onUpdate) {
   const qtyInput = createElement('input', 'w-16 px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs');
   qtyInput.type = 'number';
   qtyInput.value = item.quantity || 0;
-  qtyInput.onchange = (e) => {
+  qtyInput.addEventListener('change', (e) => {
+    console.log('Quantity changed to:', e.target.value);
     stateManager.updateItem(boardType, item.id, { quantity: parseInt(e.target.value) || 0 });
-    onUpdate && onUpdate();
-  };
+    if (typeof router === 'function') {
+      router();
+    }
+  });
   qtyCell.appendChild(qtyInput);
   row.appendChild(qtyCell);
   
@@ -151,24 +241,56 @@ function renderInventoryItem(item, boardType, onUpdate) {
   const expiryInput = createElement('input', 'px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs');
   expiryInput.type = 'date';
   expiryInput.value = item.expiryDate || '';
-  expiryInput.onchange = (e) => {
+  expiryInput.addEventListener('change', (e) => {
+    console.log('Expiry changed to:', e.target.value);
     stateManager.updateItem(boardType, item.id, { expiryDate: e.target.value });
-    onUpdate && onUpdate();
-  };
+    if (typeof router === 'function') {
+      router();
+    }
+  });
   expiryCell.appendChild(expiryInput);
   row.appendChild(expiryCell);
   
-  // Notes
+  // Notes (Editable)
   const notesCell = createElement('td', 'p-3');
-  const notesInput = createElement('input', 'w-32 px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs');
-  notesInput.type = 'text';
-  notesInput.placeholder = 'Notes...';
-  notesInput.value = item.notes || '';
-  notesInput.onchange = (e) => {
-    stateManager.updateItem(boardType, item.id, { notes: e.target.value });
-    onUpdate && onUpdate();
+  const notesDisplay = createElement('span', 'cursor-pointer hover:text-primary-pink transition text-xs');
+  notesDisplay.textContent = item.notes || '(click to add notes)';
+  notesDisplay.onclick = () => {
+    // Enter edit mode
+    notesCell.innerHTML = '';
+    const notesInput = createElement('input', 'w-32 px-2 py-1 rounded bg-white/10 border border-white/20 text-white text-xs');
+    notesInput.type = 'text';
+    notesInput.placeholder = 'Notes...';
+    notesInput.value = item.notes || '';
+    notesInput.focus();
+    
+    const saveBtn = createElement('button', 'ml-2 px-2 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-xs');
+    saveBtn.textContent = '💾';
+    saveBtn.onclick = () => {
+      stateManager.updateItem(boardType, item.id, { notes: notesInput.value });
+      if (typeof router === 'function') {
+        router();
+      }
+    };
+    
+    const cancelBtn = createElement('button', 'ml-1 px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-xs');
+    cancelBtn.textContent = '✖️';
+    cancelBtn.onclick = () => {
+      if (typeof router === 'function') {
+        router();
+      }
+    };
+    
+    notesCell.appendChild(notesInput);
+    notesCell.appendChild(saveBtn);
+    notesCell.appendChild(cancelBtn);
+    
+    notesInput.onkeydown = (e) => {
+      if (e.key === 'Enter') saveBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    };
   };
-  notesCell.appendChild(notesInput);
+  notesCell.appendChild(notesDisplay);
   row.appendChild(notesCell);
   
   // Actions
@@ -178,7 +300,9 @@ function renderInventoryItem(item, boardType, onUpdate) {
   deleteBtn.onclick = () => {
     if (confirm('Delete this item?')) {
       stateManager.deleteItem(boardType, item.id);
-      onUpdate && onUpdate();
+      if (typeof router === 'function') {
+        router();
+      }
     }
   };
   actionsCell.appendChild(deleteBtn);
@@ -302,6 +426,33 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
   
   let categoryInput = null;
   
+  // Frequency selection for Chores
+  if (boardType === CONFIG.BOARDS.CHORES) {
+    categoryInput = createElement('select', 'w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white');
+    
+    const dailyOpt = createElement('option');
+    dailyOpt.value = 'daily';
+    dailyOpt.textContent = '📅 Daily';
+    categoryInput.appendChild(dailyOpt);
+    
+    const weeklyOpt = createElement('option');
+    weeklyOpt.value = 'weekly';
+    weeklyOpt.textContent = '📆 Weekly';
+    categoryInput.appendChild(weeklyOpt);
+    
+    const biweeklyOpt = createElement('option');
+    biweeklyOpt.value = 'biweekly';
+    biweeklyOpt.textContent = '📊 Bi-weekly';
+    categoryInput.appendChild(biweeklyOpt);
+    
+    const monthlyOpt = createElement('option');
+    monthlyOpt.value = 'monthly';
+    monthlyOpt.textContent = '📈 Monthly';
+    categoryInput.appendChild(monthlyOpt);
+    
+    form.appendChild(categoryInput);
+  }
+  
   // Category selection for Self-Care
   if (boardType === CONFIG.BOARDS.SELF_CARE) {
     categoryInput = createElement('select', 'w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white');
@@ -359,6 +510,10 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
       if (itemType === CONFIG.ITEM_TYPES.CHECKLIST) {
         const category = categoryInput ? categoryInput.value : 'daily';
         item = new ChecklistItem(null, name, category);
+        // For chores, set frequency
+        if (boardType === CONFIG.BOARDS.CHORES) {
+          item.frequency = category;
+        }
       } else if (itemType === CONFIG.ITEM_TYPES.INVENTORY) {
         const category = categoryInput ? categoryInput.value : '';
         item = new InventoryItem(null, name, category);
@@ -369,7 +524,9 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
       
       if (item) {
         stateManager.addItem(boardType, item);
-        showNotification(`✅ Added: ${item.name}`);
+        if (typeof router === 'function') {
+          router();
+        }
         nameInput.value = '';
         if (categoryInput && categoryInput.tagName === 'INPUT') {
           categoryInput.value = '';
