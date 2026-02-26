@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life OS - Local MVP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-950 text-white">
+  <div id="app"></div>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary-pink': '#FF85A2',
+            'dark-slate': '#0F172A',
+          },
+          animation: {
+            'bounce-in': 'bounce-in 0.3s ease-out',
+            'pulse-pink': 'pulse-pink 2s infinite',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Configuration and Core Modules - Load in order with defer -->
+  <script defer src="config.js"></script>
+  <script defer src="data.js"></script>
+  <script defer src="state.js"></script>
+  <script defer src="api.js"></script>
+  
+  <!-- Utilities and Components -->
+  <script defer src="utils.js"></script>
+  <script defer src="components.js"></script>
+  
+  <!-- Application Logic - Must load last -->
+  <script defer src="app.js"></script>
+</body>
+</html>

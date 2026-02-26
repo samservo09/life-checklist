@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'No build needed for static SPA'",
+  "outputDirectory": "src",
+  "public": true,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "REACT_APP_API_URL": "@api_base_url",
+    "REACT_APP_GOOGLE_SHEETS_API_KEY": "@google_sheets_api_key",
+    "REACT_APP_GOOGLE_SHEETS_ID": "@google_sheets_id",
+    "REACT_APP_USE_GOOGLE_SHEETS": "@use_google_sheets",
+    "REACT_APP_DEBUG": "@debug"
+  }
+}
