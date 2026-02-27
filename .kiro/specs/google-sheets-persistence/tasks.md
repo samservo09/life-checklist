@@ -11,10 +11,10 @@
 - [x] Implement proper error handling for all methods
 
 ### 1.2 Implement Retry Logic with Exponential Backoff
-- [ ] Create `retryWithBackoff(fn, maxAttempts)` utility function
-- [ ] Implement exponential backoff: 1s, 2s, 4s delays
-- [ ] Add max retry attempts configuration (default: 3)
-- [ ] Log retry attempts for debugging
+- [x] Create `retryWithBackoff(fn, maxAttempts)` utility function
+- [x] Implement exponential backoff: 1s, 2s, 4s delays
+- [x] Add max retry attempts configuration (default: 3)
+- [x] Log retry attempts for debugging
 
 ### 1.3 Implement Offline Queue
 - [ ] Create `OfflineQueue` class to store failed requests

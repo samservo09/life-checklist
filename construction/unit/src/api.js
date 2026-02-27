@@ -136,22 +136,27 @@ class ApiService {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        if (attempt > 1) {
+          console.log(`[RETRY] Attempt ${attempt}/${maxAttempts} - Retrying operation...`);
+        }
         return await fn();
       } catch (error) {
         lastError = error;
         
         // Don't retry on client errors (4xx) except 429 (rate limit)
         if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 429) {
+          console.error(`[RETRY] Non-retryable error (${error.statusCode}): ${error.message}`);
           throw error;
         }
 
         if (attempt === maxAttempts) {
+          console.error(`[RETRY] Max retries (${maxAttempts}) reached. Final error: ${error.message}`);
           throw error;
         }
 
         // Exponential backoff: 1s, 2s, 4s, 8s, etc.
         const delay = Math.pow(2, attempt - 1) * this.retryBackoffMs;
-        console.warn(`Retry attempt ${attempt}/${maxAttempts} after ${delay}ms:`, error.message);
+        console.warn(`[RETRY] Attempt ${attempt}/${maxAttempts} failed. Error: ${error.message}. Retrying in ${delay}ms...`);
         
         await new Promise(resolve => setTimeout(resolve, delay));
       }

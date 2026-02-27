@@ -34,7 +34,10 @@ const CONFIG = {
     TTHSUN: 'tthsun',
     UNIVERSAL: 'universal'
   },
-  LOW_ENERGY_FALLBACK_IDS: ['chores-7', 'chores-8', 'chores-9', 'chores-10']
+  LOW_ENERGY_FALLBACK_IDS: ['chores-7', 'chores-8', 'chores-9', 'chores-10'],
+  RETRY_MAX_ATTEMPTS: 3,
+  RETRY_BACKOFF_MS: 1000,
+  AUTO_SYNC_INTERVAL: 60000
 };
 
 // Helper functions
