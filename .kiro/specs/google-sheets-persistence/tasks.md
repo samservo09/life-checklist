@@ -33,10 +33,10 @@
 - [x] Add `startAutoSync(intervalMs)` method
 
 ### 2.2 Implement Optimistic Update Pattern
-- [~] Update local state immediately on add/edit/delete
-- [~] Trigger cloud sync in background (non-blocking)
-- [ ] Track sync status for each item (pending/synced/failed)
-- [ ] Handle sync failures gracefully
+- [x] Update local state immediately on add/edit/delete
+- [x] Trigger cloud sync in background (non-blocking)
+- [x] Track sync status for each item (pending/synced/failed)
+- [x] Handle sync failures gracefully
 
 ### 2.3 Implement Item Deduplication
 - [x] Create logic to detect duplicate items by ID

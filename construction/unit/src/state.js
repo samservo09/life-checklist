@@ -375,6 +375,44 @@ class StateManager {
     return addedItem;
   }
 
+  // Update item with cloud sync (optimistic update pattern)
+  updateItemWithCloudSync(boardType, itemId, updates) {
+    // 1. Update item in local state immediately (optimistic update)
+    const updatedItem = this.updateItem(boardType, itemId, updates);
+    if (!updatedItem) return null;
+
+    // 2. Add sync status tracking
+    updatedItem.syncStatus = 'pending';
+    this.saveState();
+    this.notifyListeners(boardType, 'update');
+
+    // 3. Trigger cloud sync in background (non-blocking)
+    this.syncItemUpdateToCloud(boardType, updatedItem).catch(error => {
+      console.error('Background sync failed for item update:', updatedItem.id, error);
+      // Error is already handled in syncItemUpdateToCloud
+    });
+
+    return updatedItem;
+  }
+
+  // Delete item with cloud sync (optimistic update pattern)
+  deleteItemWithCloudSync(boardType, itemId) {
+    // 1. Delete item from local state immediately (optimistic update)
+    const item = this.getItem(boardType, itemId);
+    if (!item) return false;
+
+    const deleted = this.deleteItem(boardType, itemId);
+    if (!deleted) return false;
+
+    // 2. Trigger cloud sync in background (non-blocking)
+    this.syncItemDeleteToCloud(boardType, item).catch(error => {
+      console.error('Background sync failed for item delete:', item.id, error);
+      // Error is already handled in syncItemDeleteToCloud
+    });
+
+    return true;
+  }
+
   // Sync item to cloud in background
   async syncItemToCloud(boardType, item) {
     try {
@@ -398,6 +436,49 @@ class StateManager {
         this.saveState();
         this.notifyListeners(boardType, 'sync-failed');
       }
+      throw error;
+    }
+  }
+
+  // Sync item update to cloud in background
+  async syncItemUpdateToCloud(boardType, item) {
+    try {
+      // Call API to update item in Google Sheets
+      await apiService.updateItemInSheet(boardType, item.id, item);
+
+      // Update sync status to synced
+      const updatedItem = this.getItem(boardType, item.id);
+      if (updatedItem) {
+        updatedItem.syncStatus = 'synced';
+        updatedItem.syncedAt = new Date().toISOString();
+        this.saveState();
+        this.notifyListeners(boardType, 'sync-complete');
+      }
+    } catch (error) {
+      // Update sync status to failed
+      const failedItem = this.getItem(boardType, item.id);
+      if (failedItem) {
+        failedItem.syncStatus = 'failed';
+        failedItem.syncError = error.message;
+        this.saveState();
+        this.notifyListeners(boardType, 'sync-failed');
+      }
+      throw error;
+    }
+  }
+
+  // Sync item delete to cloud in background
+  async syncItemDeleteToCloud(boardType, item) {
+    try {
+      // Call API to delete item from Google Sheets
+      await apiService.deleteItemFromSheet(boardType, item.id);
+
+      // Sync complete - item is already deleted from local state
+      this.notifyListeners(boardType, 'sync-complete');
+    } catch (error) {
+      // Log error but don't update item since it's already deleted
+      console.error('Failed to sync item delete to cloud:', error);
+      this.notifyListeners(boardType, 'sync-failed');
       throw error;
     }
   }
@@ -595,6 +676,96 @@ class StateManager {
       return true;
     }
     return false;
+  }
+
+  // Retry failed sync for a specific item
+  async retryFailedSync(boardType, itemId) {
+    const item = this.getItem(boardType, itemId);
+    if (!item) {
+      console.error('Item not found for retry:', itemId);
+      return false;
+    }
+
+    if (item.syncStatus !== 'failed') {
+      console.warn('Item is not in failed state, skipping retry:', itemId);
+      return false;
+    }
+
+    try {
+      // Reset sync status to pending
+      item.syncStatus = 'pending';
+      this.saveState();
+      this.notifyListeners(boardType, 'sync-retry');
+
+      // Retry the sync based on the last action
+      // For now, we'll assume it's an add operation if it has no syncedAt
+      if (!item.syncedAt) {
+        // Item was never synced, treat as add
+        await this.syncItemToCloud(boardType, item);
+      } else {
+        // Item was previously synced, treat as update
+        await this.syncItemUpdateToCloud(boardType, item);
+      }
+
+      console.log('✓ Retry successful for item:', itemId);
+      return true;
+    } catch (error) {
+      console.error('Retry failed for item:', itemId, error);
+      return false;
+    }
+  }
+
+  // Retry all failed syncs for a board
+  async retryAllFailedSyncs(boardType) {
+    const board = this.getBoard(boardType);
+    if (!board) {
+      console.error('Board not found:', boardType);
+      return 0;
+    }
+
+    const failedItems = board.items.filter(item => item.syncStatus === 'failed');
+    if (failedItems.length === 0) {
+      console.log('No failed items to retry for board:', boardType);
+      return 0;
+    }
+
+    console.log(`🔄 Retrying ${failedItems.length} failed items for ${boardType}...`);
+
+    let successCount = 0;
+    for (const item of failedItems) {
+      try {
+        const success = await this.retryFailedSync(boardType, item.id);
+        if (success) {
+          successCount++;
+        }
+      } catch (error) {
+        console.error('Error retrying item:', item.id, error);
+      }
+    }
+
+    console.log(`✓ Retry complete: ${successCount}/${failedItems.length} items synced`);
+    return successCount;
+  }
+
+  // Get all failed items across all boards
+  getFailedItems() {
+    const failedItems = [];
+    const boards = Object.keys(this.state.boards);
+
+    for (const boardType of boards) {
+      const board = this.getBoard(boardType);
+      if (board && board.items) {
+        const boardFailedItems = board.items
+          .filter(item => item.syncStatus === 'failed')
+          .map(item => ({
+            ...item,
+            boardType: boardType
+          }));
+        failedItems.push(...boardFailedItems);
+      }
+    }
+
+    return failedItems;
   }
 
 
