@@ -1,5 +1,42 @@
 // Utility Functions
 
+/**
+ * Retry a function with exponential backoff
+ * @param {Function} fn - Async function to retry
+ * @param {number} maxAttempts - Maximum number of attempts (default: 3)
+ * @param {number} backoffMs - Initial backoff delay in milliseconds (default: 1000)
+ * @returns {Promise} - Result of the function
+ * @throws {Error} - Throws the last error if all attempts fail
+ */
+async function retryWithBackoff(fn, maxAttempts = 3, backoffMs = 1000) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on client errors (4xx) except 429 (rate limit)
+      if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 429) {
+        throw error;
+      }
+
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s, 8s, etc.
+      const delay = Math.pow(2, attempt - 1) * backoffMs;
+      console.warn(`Retry attempt ${attempt}/${maxAttempts} after ${delay}ms:`, error.message);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
 // Day variant detection for bath ritual
 function getDayVariant() {
   // Singapore Time (UTC+8)
