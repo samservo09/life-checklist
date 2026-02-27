@@ -26,23 +26,23 @@
 ## Phase 2: State Manager Enhancement
 
 ### 2.1 Add Cloud Sync Methods to state.js
-- [ ] Add `addItemWithCloudSync(boardType, item)` method
-- [ ] Add `loadFromGoogleSheets(boardType)` method
-- [ ] Add `mergeCloudItems(boardType, cloudItems)` method
-- [ ] Add `deduplicateItems(items)` method
-- [ ] Add `startAutoSync(intervalMs)` method
+- [x] Add `addItemWithCloudSync(boardType, item)` method
+- [x] Add `loadFromGoogleSheets(boardType)` method
+- [x] Add `mergeCloudItems(boardType, cloudItems)` method
+- [x] Add `deduplicateItems(items)` method
+- [x] Add `startAutoSync(intervalMs)` method
 
 ### 2.2 Implement Optimistic Update Pattern
-- [ ] Update local state immediately on add/edit/delete
-- [ ] Trigger cloud sync in background (non-blocking)
+- [~] Update local state immediately on add/edit/delete
+- [~] Trigger cloud sync in background (non-blocking)
 - [ ] Track sync status for each item (pending/synced/failed)
 - [ ] Handle sync failures gracefully
 
 ### 2.3 Implement Item Deduplication
-- [ ] Create logic to detect duplicate items by ID
-- [ ] Create logic to detect duplicate items by name + category
-- [ ] Merge duplicate items, keeping most recent version
-- [ ] Log deduplication events
+- [x] Create logic to detect duplicate items by ID
+- [x] Create logic to detect duplicate items by name + category
+- [x] Merge duplicate items, keeping most recent version
+- [x] Log deduplication events
 
 ### 2.4 Implement Reset Logic
 - [ ] Create `resetBoardItems(boardType)` method

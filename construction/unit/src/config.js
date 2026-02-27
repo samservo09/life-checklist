@@ -45,6 +45,12 @@ function isUsingGoogleSheets() {
   return CONFIG.USE_GOOGLE_SHEETS;
 }
 
-// Export for browser
-window.CONFIG = CONFIG;
-window.isUsingGoogleSheets = isUsingGoogleSheets;
+// Export for browser and Node.js
+if (typeof window !== 'undefined') {
+  window.CONFIG = CONFIG;
+  window.isUsingGoogleSheets = isUsingGoogleSheets;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CONFIG, isUsingGoogleSheets };
+}

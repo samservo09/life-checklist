@@ -7,6 +7,7 @@ class StateManager {
     this.state = this.initializeState();
     this.listeners = [];
     this.isUpdating = false;
+    this.autoSyncTimer = null;
   }
 
   // Initialize state with hardcoded data
@@ -354,6 +355,250 @@ class StateManager {
     this.saveState();
     this.notifyListeners(boardType, 'reset');
   }
+
+  // Add item with cloud sync (optimistic update pattern)
+  addItemWithCloudSync(boardType, item) {
+    // 1. Add item to local state immediately (optimistic update)
+    const addedItem = this.addItem(boardType, item);
+
+    // 2. Add sync status tracking
+    addedItem.syncStatus = 'pending';
+    this.saveState();
+    this.notifyListeners(boardType, 'add');
+
+    // 3. Trigger cloud sync in background (non-blocking)
+    this.syncItemToCloud(boardType, addedItem).catch(error => {
+      console.error('Background sync failed for item:', addedItem.id, error);
+      // Error is already handled in syncItemToCloud
+    });
+
+    return addedItem;
+  }
+
+  // Sync item to cloud in background
+  async syncItemToCloud(boardType, item) {
+    try {
+      // Call API to append item to Google Sheets
+      await apiService.appendItem(boardType, item);
+
+      // Update sync status to synced
+      const updatedItem = this.getItem(boardType, item.id);
+      if (updatedItem) {
+        updatedItem.syncStatus = 'synced';
+        updatedItem.syncedAt = new Date().toISOString();
+        this.saveState();
+        this.notifyListeners(boardType, 'sync-complete');
+      }
+    } catch (error) {
+      // Update sync status to failed
+      const failedItem = this.getItem(boardType, item.id);
+      if (failedItem) {
+        failedItem.syncStatus = 'failed';
+        failedItem.syncError = error.message;
+        this.saveState();
+        this.notifyListeners(boardType, 'sync-failed');
+      }
+      throw error;
+    }
+  }
+
+  // Load items from Google Sheets for a specific board
+  async loadFromGoogleSheets(boardType) {
+    try {
+      // Fetch items from Google Sheets API
+      const cloudItems = await apiService.fetchBoardFromSheet(boardType);
+
+      // Validate response is an array
+      if (!Array.isArray(cloudItems)) {
+        console.warn(`Invalid response from Google Sheets for ${boardType}: expected array, got ${typeof cloudItems}`);
+        return [];
+      }
+
+      console.log(`✓ Loaded ${cloudItems.length} items from Google Sheets for ${boardType}`);
+      return cloudItems;
+    } catch (error) {
+      console.error(`Failed to load items from Google Sheets for ${boardType}:`, error);
+      // Return empty array on failure to allow app to continue with local data
+      return [];
+    }
+  }
+
+  // Merge cloud items with local items
+  mergeCloudItems(boardType, cloudItems) {
+    const board = this.getBoard(boardType);
+    if (!board) return [];
+
+    // Validate cloudItems is an array
+    if (!Array.isArray(cloudItems)) {
+      console.warn(`Invalid cloudItems for ${boardType}: expected array, got ${typeof cloudItems}`);
+      return board.items;
+    }
+
+    // Create a map of local items by ID for quick lookup
+    const localItemsById = {};
+    board.items.forEach(item => {
+      if (item.id) {
+        localItemsById[item.id] = item;
+      }
+    });
+
+    // Create a map of cloud items by ID
+    const cloudItemsById = {};
+    cloudItems.forEach(item => {
+      if (item.id) {
+        cloudItemsById[item.id] = item;
+      }
+    });
+
+    // Merge items: start with local items, add/update with cloud items
+    const mergedItems = [];
+    const processedIds = new Set();
+
+    // First, add all local items (or update with cloud version if exists)
+    board.items.forEach(localItem => {
+      if (localItem.id && cloudItemsById[localItem.id]) {
+        // Item exists in both local and cloud - use cloud version (last-write-wins)
+        const cloudItem = cloudItemsById[localItem.id];
+        mergedItems.push(cloudItem);
+        processedIds.add(localItem.id);
+      } else {
+        // Item only in local - keep it
+        mergedItems.push(localItem);
+        if (localItem.id) {
+          processedIds.add(localItem.id);
+        }
+      }
+    });
+
+    // Then, add cloud items that don't exist locally
+    cloudItems.forEach(cloudItem => {
+      if (cloudItem.id && !processedIds.has(cloudItem.id)) {
+        // Check for duplicate by name + category (for items without matching ID)
+        const isDuplicate = mergedItems.some(item => 
+          item.name === cloudItem.name && 
+          item.category === cloudItem.category
+        );
+
+        if (!isDuplicate) {
+          mergedItems.push(cloudItem);
+          processedIds.add(cloudItem.id);
+        } else {
+          console.log(`Skipped duplicate item: ${cloudItem.name} (${cloudItem.category})`);
+        }
+      }
+    });
+
+    // Update board with merged items
+    board.items = mergedItems;
+    this.updateCompletionPercentage(boardType);
+    this.saveState();
+    this.notifyListeners(boardType, 'merge');
+
+    console.log(`✓ Merged ${mergedItems.length} items for ${boardType} (${cloudItems.length} from cloud)`);
+    return mergedItems;
+  }
+
+  // Deduplicate items by ID and by name + category
+  deduplicateItems(items) {
+    if (!Array.isArray(items)) {
+      console.warn('deduplicateItems: expected array, got', typeof items);
+      return [];
+    }
+
+    if (items.length === 0) {
+      return [];
+    }
+
+    const deduplicatedItems = [];
+    const seenIds = new Set();
+    const seenNameCategories = new Set();
+
+    for (const item of items) {
+      // Check for duplicate by ID
+      if (item.id) {
+        if (seenIds.has(item.id)) {
+          console.log(`Skipped duplicate item by ID: ${item.id}`);
+          continue;
+        }
+        seenIds.add(item.id);
+      }
+
+      // Check for duplicate by name + category
+      const nameCategory = `${item.name}|${item.category || ''}`;
+      if (seenNameCategories.has(nameCategory)) {
+        console.log(`Skipped duplicate item by name+category: ${item.name} (${item.category})`);
+        continue;
+      }
+      seenNameCategories.add(nameCategory);
+
+      deduplicatedItems.push(item);
+    }
+
+    console.log(`✓ Deduplicated ${items.length} items to ${deduplicatedItems.length} items`);
+    return deduplicatedItems;
+  }
+
+  // Start automatic sync with Google Sheets at specified interval
+  startAutoSync(intervalMs = CONFIG.AUTO_SYNC_INTERVAL) {
+    // Stop any existing auto-sync timer
+    if (this.autoSyncTimer) {
+      clearInterval(this.autoSyncTimer);
+      console.log('⏹️ Stopped existing auto-sync timer');
+    }
+
+    // Validate interval
+    if (typeof intervalMs !== 'number' || intervalMs <= 0) {
+      console.error('Invalid auto-sync interval:', intervalMs);
+      return false;
+    }
+
+    // Start new auto-sync timer
+    this.autoSyncTimer = setInterval(async () => {
+      try {
+        console.log('🔄 Starting auto-sync with Google Sheets...');
+
+        // Sync all boards
+        const boards = Object.keys(this.state.boards);
+        for (const boardType of boards) {
+          try {
+            // Load items from Google Sheets for this board
+            const cloudItems = await this.loadFromGoogleSheets(boardType);
+
+            // Merge cloud items with local items
+            if (cloudItems.length > 0) {
+              this.mergeCloudItems(boardType, cloudItems);
+            }
+          } catch (error) {
+            console.error(`Auto-sync failed for board ${boardType}:`, error);
+            // Continue with next board on error
+          }
+        }
+
+        console.log('✓ Auto-sync completed');
+        this.notifyListeners(null, 'auto-sync-complete');
+      } catch (error) {
+        console.error('Auto-sync error:', error);
+        this.notifyListeners(null, 'auto-sync-error');
+      }
+    }, intervalMs);
+
+    console.log(`✓ Auto-sync started with interval: ${intervalMs}ms`);
+    return true;
+  }
+
+  // Stop automatic sync with Google Sheets
+  stopAutoSync() {
+    if (this.autoSyncTimer) {
+      clearInterval(this.autoSyncTimer);
+      this.autoSyncTimer = null;
+      console.log('⏹️ Auto-sync stopped');
+      return true;
+    }
+    return false;
+  }
+
+
+
 }
 
 // Create global state manager instance - Initialize immediately with mock data
@@ -362,3 +607,9 @@ const stateManager = new StateManager();
 // Log initialization
 console.log('✅ StateManager initialized with', Object.keys(stateManager.getState().boards).length, 'boards');
 console.log('📊 Total items:', Object.values(stateManager.getState().boards).reduce((sum, board) => sum + board.items.length, 0));
+
+
+// Export for use in Node.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { StateManager, stateManager };
+}

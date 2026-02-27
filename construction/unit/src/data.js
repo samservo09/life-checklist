@@ -269,3 +269,8 @@ function clearAllData() {
 if (!localStorage.getItem('lifeOS_data')) {
   saveData(getInitialData());
 }
+
+// Export for Node.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ChecklistItem, InventoryItem, RitualStep, getInitialData, saveData, loadData, resetBoard, exportData, importData, clearAllData };
+}
