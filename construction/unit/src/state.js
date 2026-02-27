@@ -768,6 +768,90 @@ class StateManager {
     return failedItems;
   }
 
+  // Reset board items - set completed = false for all items and sync to Google Sheets
+  async resetBoardItems(boardType) {
+    const board = this.getBoard(boardType);
+    if (!board) {
+      console.warn(`Board ${boardType} not found`);
+      return false;
+    }
+
+    try {
+      // 1. Reset completed status for all items locally
+      board.items.forEach(item => {
+        item.completed = false;
+        item.completedAt = null;
+        item.syncStatus = 'pending'; // Mark for sync
+      });
+
+      // 2. Update completion percentage
+      this.updateCompletionPercentage(boardType);
+
+      // 3. Save to localStorage
+      this.saveState();
+
+      // 4. Log the reset action
+      this.logAction(boardType, 'board', 'reset', `${boardType} reset`, null, null);
+
+      // 5. Notify listeners of the reset
+      this.notifyListeners(boardType, 'reset');
+
+      // 6. Sync reset status to Google Sheets in background (non-blocking)
+      this.syncBoardResetToCloud(boardType).catch(error => {
+        console.error(`Background sync failed for board reset: ${boardType}`, error);
+        // Error is already handled in syncBoardResetToCloud
+      });
+
+      console.log(`✓ Reset ${board.items.length} items in ${boardType}`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to reset board items for ${boardType}:`, error);
+      return false;
+    }
+  }
+
+  // Sync board reset to cloud in background
+  async syncBoardResetToCloud(boardType) {
+    const board = this.getBoard(boardType);
+    if (!board) return;
+
+    try {
+      // Prepare items for batch update - only send completed status
+      const itemsToUpdate = board.items.map(item => ({
+        id: item.id,
+        completed: false,
+        completedAt: null,
+        timestamp: new Date().toISOString()
+      }));
+
+      // Call API to batch update items in Google Sheets
+      if (itemsToUpdate.length > 0) {
+        await apiService.batchUpdateItems(boardType, itemsToUpdate);
+      }
+
+      // Update sync status to synced for all items
+      board.items.forEach(item => {
+        item.syncStatus = 'synced';
+        item.syncedAt = new Date().toISOString();
+      });
+
+      this.saveState();
+      this.notifyListeners(boardType, 'sync-complete');
+      console.log(`✓ Synced reset for ${board.items.length} items in ${boardType} to Google Sheets`);
+    } catch (error) {
+      // Update sync status to failed for all items
+      board.items.forEach(item => {
+        item.syncStatus = 'failed';
+        item.syncError = error.message;
+      });
+
+      this.saveState();
+      this.notifyListeners(boardType, 'sync-failed');
+      console.error(`Failed to sync board reset for ${boardType} to Google Sheets:`, error);
+      throw error;
+    }
+  }
+
 
 
 }

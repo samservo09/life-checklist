@@ -485,6 +485,57 @@ class ApiService {
     }
   }
 
+  // Batch update items in Google Sheets
+  async batchUpdateItems(boardType, items) {
+    if (!this.useGoogleSheets) {
+      // Local mock - return items with timestamps
+      return items.map(item => ({
+        ...item,
+        timestamp: new Date().toISOString()
+      }));
+    }
+
+    // Validate input
+    if (!boardType || !Array.isArray(items) || items.length === 0) {
+      throw new Error('Invalid batch update: boardType and non-empty items array are required');
+    }
+
+    // Validate each item
+    for (const item of items) {
+      if (!item.id) {
+        throw new Error('Invalid item in batch: each item must have id');
+      }
+    }
+
+    const operation = {
+      type: 'batch-update',
+      boardType,
+      items: items.map(item => ({
+        id: item.id,
+        completed: item.completed !== undefined ? item.completed : false,
+        completedAt: item.completedAt || null,
+        timestamp: new Date().toISOString()
+      }))
+    };
+
+    try {
+      return await this.retryWithBackoff(async () => {
+        return await this.fetch('/items/batch-update', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            boardType,
+            items: operation.items
+          })
+        });
+      });
+    } catch (error) {
+      console.error(`Failed to batch update items in ${boardType} sheet after retries:`, error);
+      // Queue for later retry
+      this.offlineQueue.add(operation);
+      throw error;
+    }
+  }
+
   // Sync all data with Google Sheets
   async syncAll() {
     if (!this.useGoogleSheets) {

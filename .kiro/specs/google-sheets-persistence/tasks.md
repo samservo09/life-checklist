@@ -45,10 +45,10 @@
 - [x] Log deduplication events
 
 ### 2.4 Implement Reset Logic
-- [ ] Create `resetBoardItems(boardType)` method
-- [ ] Set `completed = false` for all items
-- [ ] Preserve item names, categories, frequencies
-- [ ] Sync reset status to Google Sheets
+- [x] Create `resetBoardItems(boardType)` method
+- [x] Set `completed = false` for all items
+- [x] Preserve item names, categories, frequencies
+- [x] Sync reset status to Google Sheets
 - [ ] Trigger at 12 AM Singapore Time
 
 ## Phase 3: Component Updates
