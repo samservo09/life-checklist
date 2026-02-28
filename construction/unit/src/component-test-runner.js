@@ -1,4 +1,4 @@
-// Test runner for StateManager tests
+// Test runner for Component tests
 // Loads modules in the correct order for testing
 
 // Mock localStorage for Node.js environment
@@ -38,7 +38,21 @@ if (typeof document === 'undefined') {
         textContent: '',
         innerHTML: '',
         title: '',
+        id: '',
         children: [],
+        querySelectorAll(selector) {
+          // Simple selector support for [id^="error-"]
+          if (selector === '[id^="error-"]') {
+            return this.children.filter(child => child.id && child.id.startsWith('error-'));
+          }
+          return [];
+        },
+        querySelector(selector) {
+          if (selector === 'button') {
+            return this.children.find(child => child.tagName === 'BUTTON');
+          }
+          return null;
+        },
         appendChild(child) {
           this.children.push(child);
           return child;
@@ -72,6 +86,8 @@ global.getAreaTitle = utilsModule.getAreaTitle;
 global.getDayName = utilsModule.getDayName;
 global.getVariantLabel = utilsModule.getVariantLabel;
 global.showNotification = utilsModule.showNotification;
+global.clearElement = utilsModule.clearElement;
+global.getLocalStorageSize = utilsModule.getLocalStorageSize;
 
 const apiModule = require('./api.js');
 global.apiService = apiModule.apiService;
@@ -88,10 +104,7 @@ global.renderInventoryItem = componentsModule.renderInventoryItem;
 global.renderAddItemForm = componentsModule.renderAddItemForm;
 
 // Now run the tests
-const testModule = require('./state.test.js');
+const testModule = require('./components.test.js');
 
 // Call the test runner function
-testModule.runAllStateTests().catch(error => {
-  console.error('Test suite failed:', error);
-  process.exit(1);
-});
+testModule.runAllComponentTests();

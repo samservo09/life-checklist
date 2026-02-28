@@ -1,5 +1,34 @@
 // Reusable Components
 
+// Sync Status Indicator Component
+function renderSyncStatus(item) {
+  const container = createElement('div', 'flex items-center gap-1');
+  
+  if (!item.syncStatus) {
+    // No sync status - item is local only
+    return container;
+  }
+  
+  const statusIndicator = createElement('span', 'text-xs font-medium');
+  
+  if (item.syncStatus === 'pending') {
+    statusIndicator.className = 'text-xs font-medium text-yellow-400';
+    statusIndicator.textContent = '⏳ pending';
+    statusIndicator.title = 'Syncing to cloud...';
+  } else if (item.syncStatus === 'synced') {
+    statusIndicator.className = 'text-xs font-medium text-green-400';
+    statusIndicator.textContent = '✅ synced';
+    statusIndicator.title = 'Synced to cloud';
+  } else if (item.syncStatus === 'failed') {
+    statusIndicator.className = 'text-xs font-medium text-red-400';
+    statusIndicator.textContent = '⚠️ failed';
+    statusIndicator.title = item.syncError ? `Sync failed: ${item.syncError}` : 'Sync failed - click to retry';
+  }
+  
+  container.appendChild(statusIndicator);
+  return container;
+}
+
 // Header Component
 function renderHeader(area) {
   const header = createElement('div', 'sticky top-0 z-50 glassmorphic mb-4 p-4 flex items-center justify-between');
@@ -74,6 +103,10 @@ function renderChecklistItem(item, boardType, onToggle, onEdit, onDelete) {
   name.textContent = item.name;
   nameContainer.appendChild(name);
   
+  // Add sync status indicator
+  const syncStatus = renderSyncStatus(item);
+  nameContainer.appendChild(syncStatus);
+  
   // Edit button for inline editing
   const editNameBtn = createElement('button', 'text-xs px-1 py-0 rounded hover:bg-white/10 transition');
   editNameBtn.textContent = '✏️';
@@ -131,6 +164,26 @@ function renderChecklistItem(item, boardType, onToggle, onEdit, onDelete) {
   
   const actions = createElement('div', 'flex gap-2 flex-shrink-0');
   
+  // Add retry button for failed items
+  if (item.syncStatus === 'failed') {
+    const retryBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-yellow-500/20 transition');
+    retryBtn.textContent = '🔄';
+    retryBtn.title = 'Retry sync';
+    retryBtn.onclick = () => {
+      stateManager.retryFailedSync(boardType, item.id).then(success => {
+        if (success) {
+          showNotification('Retry successful!');
+        } else {
+          showNotification('Retry failed - will try again later');
+        }
+        if (typeof router === 'function') {
+          router();
+        }
+      });
+    };
+    actions.appendChild(retryBtn);
+  }
+  
   const deleteBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-red-500/20 transition');
   deleteBtn.textContent = '🗑️';
   deleteBtn.onclick = () => {
@@ -158,6 +211,13 @@ function renderInventoryItem(item, boardType, onUpdate) {
   const nameCell = createElement('td', 'p-3 font-medium text-white');
   const nameDisplay = createElement('span', 'cursor-pointer hover:text-primary-pink transition');
   nameDisplay.textContent = item.name;
+  
+  // Add sync status indicator next to name
+  const nameContainer = createElement('div', 'flex items-center gap-2');
+  nameContainer.appendChild(nameDisplay);
+  const syncStatus = renderSyncStatus(item);
+  nameContainer.appendChild(syncStatus);
+  
   nameDisplay.onclick = () => {
     // Enter edit mode
     nameCell.innerHTML = '';
@@ -194,7 +254,7 @@ function renderInventoryItem(item, boardType, onUpdate) {
       if (e.key === 'Escape') cancelBtn.click();
     };
   };
-  nameCell.appendChild(nameDisplay);
+  nameCell.appendChild(nameContainer);
   row.appendChild(nameCell);
   
   // Status Dropdown
@@ -295,6 +355,27 @@ function renderInventoryItem(item, boardType, onUpdate) {
   
   // Actions
   const actionsCell = createElement('td', 'p-3 text-right');
+  
+  // Add retry button for failed items
+  if (item.syncStatus === 'failed') {
+    const retryBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-yellow-500/20 transition');
+    retryBtn.textContent = '🔄';
+    retryBtn.title = 'Retry sync';
+    retryBtn.onclick = () => {
+      stateManager.retryFailedSync(boardType, item.id).then(success => {
+        if (success) {
+          showNotification('Retry successful!');
+        } else {
+          showNotification('Retry failed - will try again later');
+        }
+        if (typeof router === 'function') {
+          router();
+        }
+      });
+    };
+    actionsCell.appendChild(retryBtn);
+  }
+  
   const deleteBtn = createElement('button', 'text-sm px-2 py-1 rounded hover:bg-red-500/20 transition');
   deleteBtn.textContent = '🗑️';
   deleteBtn.onclick = () => {
@@ -417,6 +498,11 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
   title.textContent = '➕ Add New Item';
   container.appendChild(title);
   
+  // Error message display area
+  const errorContainer = createElement('div', 'mb-3');
+  errorContainer.id = `error-${boardType}-${Date.now()}`;
+  container.appendChild(errorContainer);
+  
   const form = createElement('div', 'space-y-2');
   
   const nameInput = createElement('input', 'w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500');
@@ -504,6 +590,10 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
   addBtn.textContent = 'Add Item';
   addBtn.onclick = () => {
     const name = nameInput.value.trim();
+    
+    // Clear previous error messages
+    errorContainer.innerHTML = '';
+    
     if (name) {
       let item;
       
@@ -523,7 +613,25 @@ function renderAddItemForm(boardType, itemType = 'checklist', onAdd) {
       }
       
       if (item) {
-        stateManager.addItem(boardType, item);
+        stateManager.addItemWithCloudSync(boardType, item);
+        
+        // Listen for sync failures and display error message
+        const unsubscribe = stateManager.subscribe((board, action) => {
+          if (action === 'sync-failed') {
+            const failedItem = stateManager.getItem(boardType, item.id);
+            if (failedItem && failedItem.syncStatus === 'failed') {
+              // Display error message
+              errorContainer.innerHTML = '';
+              const errorMsg = createElement('div', 'p-3 rounded bg-red-500/20 border border-red-500/50 text-red-300 text-sm');
+              errorMsg.innerHTML = `<strong>⚠️ Sync Failed:</strong> ${failedItem.syncError || 'Failed to sync item to cloud. Please try again.'}<br><small>Item saved locally. Click the retry button (🔄) on the item to sync again.</small>`;
+              errorContainer.appendChild(errorMsg);
+              
+              // Unsubscribe after showing error
+              unsubscribe();
+            }
+          }
+        });
+        
         if (typeof router === 'function') {
           router();
         }
@@ -638,4 +746,22 @@ function renderConsistencyLog() {
   }
   
   return container;
+}
+
+// Export for use in Node.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    renderSyncStatus,
+    renderHeader,
+    renderNavigation,
+    renderChecklistItem,
+    renderInventoryItem,
+    renderInventoryTable,
+    renderCompletionPercentage,
+    renderLowEnergyToggle,
+    renderBathRitualIndicator,
+    renderAddItemForm,
+    renderSettingsPanel,
+    renderConsistencyLog
+  };
 }

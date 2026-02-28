@@ -452,3 +452,28 @@ function getLowEnergyItems() {
   const fallbackIds = ['chores-7', 'chores-8', 'chores-9', 'chores-10'];
   return data.boards.chores.items.filter(item => fallbackIds.includes(item.id));
 }
+
+
+// Export for use in Node.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    createElement,
+    clearElement,
+    formatDate,
+    formatTime,
+    formatDateTime,
+    getCompletionColor,
+    getCompletionEmoji,
+    getAreaTitle,
+    getDayName,
+    getVariantLabel,
+    navigateToArea,
+    getAreaFromURL,
+    showNotification,
+    debounce,
+    throttle,
+    getLocalStorageSize,
+    toggleLowEnergyMode,
+    getLowEnergyItems
+  };
+}
