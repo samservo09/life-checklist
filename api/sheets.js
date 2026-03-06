@@ -18,10 +18,16 @@ const SHEET_NAMES = {
 };
 
 // Initialize Google Sheets API with service account
-const auth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '{}'),
-  scopes: ['https://www.googleapis.com/auth/spreadsheets']
-});
+let auth;
+try {
+  const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '{}');
+  auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+  });
+} catch (e) {
+  console.error('Failed to initialize auth:', e);
+}
 
 const sheets = google.sheets({ version: 'v4', auth });
 
