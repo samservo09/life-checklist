@@ -674,6 +674,9 @@ async function runAllStateTests() {
     // Run deduplicateItems tests
     await runDeduplicateItemsTests();
     
+    // Run startAutoSync tests
+    await runStartAutoSyncTests();
+    
     console.log('\n✓ All StateManager tests passed!');
   } catch (error) {
     console.error('\n✗ Test failed:', error.message);
@@ -959,6 +962,198 @@ async function runDeduplicateItemsTests() {
     await testDeduplicateItemsReturnsNoDuplicates();
     
     console.log('\n✓ All deduplicateItems tests passed!');
+  } catch (error) {
+    console.error('\n✗ Test failed:', error.message);
+    console.error(error.stack);
+    process.exit(1);
+  }
+}
+
+
+/**
+ * Test: startAutoSync starts a timer with the specified interval
+ */
+async function testStartAutoSyncStartsTimer() {
+  // Create a fresh state manager
+  const testStateManager = new StateManager();
+  
+  // Mock the loadFromGoogleSheets method
+  const originalLoadFromGoogleSheets = testStateManager.loadFromGoogleSheets;
+  testStateManager.loadFromGoogleSheets = async function() {
+    return [];
+  };
+  
+  try {
+    // Start auto-sync with a short interval
+    const result = testStateManager.startAutoSync(100);
+    
+    // Verify the method returns true
+    if (result !== true) {
+      throw new Error(`Expected startAutoSync to return true, got ${result}`);
+    }
+    
+    // Verify the timer is set
+    if (!testStateManager.autoSyncTimer) {
+      throw new Error('Auto-sync timer was not set');
+    }
+    
+    // Stop the timer
+    testStateManager.stopAutoSync();
+    
+    // Verify the timer is cleared
+    if (testStateManager.autoSyncTimer !== null) {
+      throw new Error('Auto-sync timer was not cleared after stopAutoSync');
+    }
+    
+    console.log('✓ Test passed: startAutoSync starts a timer with the specified interval');
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Test: startAutoSync validates interval parameter
+ */
+async function testStartAutoSyncValidatesInterval() {
+  // Create a fresh state manager
+  const testStateManager = new StateManager();
+  
+  try {
+    // Test with invalid interval (negative)
+    const result1 = testStateManager.startAutoSync(-100);
+    if (result1 !== false) {
+      throw new Error('Expected startAutoSync to return false for negative interval');
+    }
+    
+    // Test with invalid interval (zero)
+    const result2 = testStateManager.startAutoSync(0);
+    if (result2 !== false) {
+      throw new Error('Expected startAutoSync to return false for zero interval');
+    }
+    
+    // Test with invalid interval (non-number)
+    const result3 = testStateManager.startAutoSync('invalid');
+    if (result3 !== false) {
+      throw new Error('Expected startAutoSync to return false for non-number interval');
+    }
+    
+    console.log('✓ Test passed: startAutoSync validates interval parameter');
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Test: startAutoSync stops existing timer before starting new one
+ */
+async function testStartAutoSyncStopsExistingTimer() {
+  // Create a fresh state manager
+  const testStateManager = new StateManager();
+  
+  // Mock the loadFromGoogleSheets method
+  testStateManager.loadFromGoogleSheets = async function() {
+    return [];
+  };
+  
+  try {
+    // Start first auto-sync
+    testStateManager.startAutoSync(100);
+    const firstTimer = testStateManager.autoSyncTimer;
+    
+    // Start second auto-sync (should stop the first one)
+    testStateManager.startAutoSync(200);
+    const secondTimer = testStateManager.autoSyncTimer;
+    
+    // Verify the timers are different
+    if (firstTimer === secondTimer) {
+      throw new Error('Expected new timer to be different from old timer');
+    }
+    
+    // Stop the timer
+    testStateManager.stopAutoSync();
+    
+    console.log('✓ Test passed: startAutoSync stops existing timer before starting new one');
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Test: stopAutoSync clears the timer
+ */
+async function testStopAutoSyncClearsTimer() {
+  // Create a fresh state manager
+  const testStateManager = new StateManager();
+  
+  // Mock the loadFromGoogleSheets method
+  testStateManager.loadFromGoogleSheets = async function() {
+    return [];
+  };
+  
+  try {
+    // Start auto-sync
+    testStateManager.startAutoSync(100);
+    
+    // Verify timer is set
+    if (!testStateManager.autoSyncTimer) {
+      throw new Error('Auto-sync timer was not set');
+    }
+    
+    // Stop auto-sync
+    const result = testStateManager.stopAutoSync();
+    
+    // Verify the method returns true
+    if (result !== true) {
+      throw new Error(`Expected stopAutoSync to return true, got ${result}`);
+    }
+    
+    // Verify the timer is cleared
+    if (testStateManager.autoSyncTimer !== null) {
+      throw new Error('Auto-sync timer was not cleared');
+    }
+    
+    console.log('✓ Test passed: stopAutoSync clears the timer');
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Test: stopAutoSync returns false when no timer is running
+ */
+async function testStopAutoSyncReturnsFalseWhenNoTimer() {
+  // Create a fresh state manager
+  const testStateManager = new StateManager();
+  
+  try {
+    // Stop auto-sync without starting it
+    const result = testStateManager.stopAutoSync();
+    
+    // Verify the method returns false
+    if (result !== false) {
+      throw new Error(`Expected stopAutoSync to return false when no timer is running, got ${result}`);
+    }
+    
+    console.log('✓ Test passed: stopAutoSync returns false when no timer is running');
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Run all startAutoSync tests
+ */
+async function runStartAutoSyncTests() {
+  console.log('\nRunning startAutoSync tests...\n');
+  
+  try {
+    await testStartAutoSyncStartsTimer();
+    await testStartAutoSyncValidatesInterval();
+    await testStartAutoSyncStopsExistingTimer();
+    await testStopAutoSyncClearsTimer();
+    await testStopAutoSyncReturnsFalseWhenNoTimer();
+    
+    console.log('\n✓ All startAutoSync tests passed!');
   } catch (error) {
     console.error('\n✗ Test failed:', error.message);
     console.error(error.stack);

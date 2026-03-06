@@ -428,8 +428,118 @@ function router() {
   }
 }
 
+// Initialize Google Sheets integration with OAuth 2.0
+async function initializeGoogleSheets() {
+  if (!CONFIG.USE_GOOGLE_SHEETS) {
+    console.log('Google Sheets integration disabled');
+    return;
+  }
+
+  try {
+    // Initialize OAuth 2.0 authentication
+    const oauthInitialized = await oauth2Manager.initialize(CONFIG.API_KEY);
+
+    if (!oauthInitialized) {
+      console.log('OAuth 2.0 not initialized - using local dev mode');
+      return;
+    }
+
+    // Check if user is already signed in
+    if (!oauth2Manager.isSignedIn()) {
+      console.log('User not signed in - attempting automatic sign-in...');
+      const signInSuccess = await oauth2Manager.signIn();
+      
+      if (!signInSuccess) {
+        console.warn('Automatic sign-in failed - user will need to sign in manually');
+        return;
+      }
+    }
+
+    console.log('OAuth 2.0 authentication successful');
+
+    // Get access token for API calls
+    const accessToken = oauth2Manager.getAccessToken();
+    if (accessToken) {
+      console.log('Access token obtained successfully');
+      // Store token in API service for use in requests
+      if (typeof apiService !== 'undefined') {
+        apiService.setAccessToken(accessToken);
+      }
+    }
+
+    // Fetch initial data from Google Sheets for each board
+    const boards = Object.values(CONFIG.BOARDS);
+    for (const boardType of boards) {
+      try {
+        const cloudItems = await stateManager.loadFromGoogleSheets(boardType);
+        
+        // Merge cloud items with local items
+        if (cloudItems && cloudItems.length > 0) {
+          stateManager.mergeCloudItems(boardType, cloudItems);
+          console.log(`✓ Merged ${cloudItems.length} items from Google Sheets for ${boardType}`);
+        } else {
+          console.log(`No items to merge for ${boardType}`);
+        }
+      } catch (error) {
+        console.warn(`Failed to load items from Google Sheets for ${boardType}:`, error);
+      }
+    }
+
+    // Start auto-sync timer
+    stateManager.startAutoSync(CONFIG.AUTO_SYNC_INTERVAL);
+    console.log('Auto-sync started with interval:', CONFIG.AUTO_SYNC_INTERVAL, 'ms');
+
+  } catch (error) {
+    console.error('Failed to initialize Google Sheets:', error);
+  }
+}
+
+// Handle connection restoration
+function setupConnectionHandlers() {
+  // Listen for online event
+  window.addEventListener('online', async () => {
+    console.log('✓ Connection restored');
+    
+    // Process offline queue when connection is restored
+    if (typeof apiService !== 'undefined' && apiService.offlineQueue) {
+      try {
+        const result = await apiService.processOfflineQueue(stateManager);
+        console.log('Offline queue processed:', result);
+        
+        // Refresh UI to show synced items
+        router();
+      } catch (error) {
+        console.error('Error processing offline queue:', error);
+      }
+    }
+  });
+  
+  // Listen for offline event
+  window.addEventListener('offline', () => {
+    console.log('⚠️ Connection lost - offline mode enabled');
+  });
+}
+
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize state manager first
+  stateManager.loadState();
+  
+  // Setup connection handlers for offline resilience
+  setupConnectionHandlers();
+  
+  // Initialize Google Sheets if enabled
+  await initializeGoogleSheets();
+  
+  // Schedule daily reset at 12 AM Singapore time
+  const resetTimeoutId = scheduleDailyResetAtMidnightSingapore(stateManager);
+  
+  // Store timeout ID globally for cleanup if needed
+  if (typeof window !== 'undefined') {
+    window.resetTimeoutId = resetTimeoutId;
+  }
+  
+  // Render initial view
   router();
   
   // Listen for URL changes

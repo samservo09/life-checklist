@@ -73,61 +73,75 @@
 
 ## Phase 4: Configuration & Initialization
 
-### 4.1 Update config.js
-- [ ] Add `USE_GOOGLE_SHEETS` flag
-- [ ] Add `SHEET_ID` configuration
-- [ ] Add `API_KEY` configuration
-- [ ] Add `GOOGLE_SHEETS_API_URL` configuration
-- [ ] Add `AUTO_SYNC_INTERVAL` configuration (default: 60000ms)
-- [ ] Add `RETRY_MAX_ATTEMPTS` configuration (default: 3)
-- [ ] Add `RETRY_BACKOFF_MS` configuration (default: 1000ms)
+### 4.1 Update config.js (Security Refactor)
+- [x] Add `USE_GOOGLE_SHEETS` flag
+- [x] Add `SHEET_ID` configuration
+- [x] Add `CLIENT_ID` configuration (renamed from API_KEY)
+- [x] Add `GOOGLE_SHEETS_API_URL` configuration
+- [x] Add `AUTO_SYNC_INTERVAL` configuration (default: 60000ms)
+- [x] Add `RETRY_MAX_ATTEMPTS` configuration (default: 3)
+- [x] Add `RETRY_BACKOFF_MS` configuration (default: 1000ms)
+- [x] Refactor to read from environment variables (VITE_GOOGLE_SHEET_ID, VITE_GOOGLE_CLIENT_ID)
+- [x] Implement graceful degradation to Local Mode if credentials missing
+- [x] Add `hasValidGoogleSheetsCredentials()` helper function
+- [x] Create `.env.example` template with instructions
+- [x] Add credential validation logging
 
 ### 4.2 Update index.html
-- [ ] Add Google API client library script
-- [ ] Ensure correct script loading order
+- [x] Add Google API client library script
+- [x] Ensure correct script loading order
 
 ### 4.3 Initialize Google Sheets on App Load
-- [ ] Load Google API client
-- [ ] Initialize OAuth 2.0 authentication
-- [ ] Fetch initial data from Google Sheets
-- [ ] Merge with local data
-- [ ] Start auto-sync timer
+- [x] Load Google API client
+- [x] Initialize OAuth 2.0 authentication
+- [x] Fetch initial data from Google Sheets
+- [x] Merge with local data
+- [x] Start auto-sync timer
+
+### 4.4 API Security Validation (NEW)
+- [x] Add credential validation to ApiService constructor
+- [x] Implement fallback to Local Mode if credentials invalid
+- [x] Add warning logs for missing credentials
+- [x] Ensure all API methods check `hasValidCredentials` before attempting sync
+- [x] Create GOOGLE_SHEETS_SETUP.md with complete setup instructions
+- [x] Document Vercel environment variable configuration
+- [x] Add security best practices documentation
 
 ## Phase 5: Integration & Testing
 
 ### 5.1 Test Optimistic Updates
-- [ ] Add item and verify it appears immediately
-- [ ] Verify item is saved to localStorage
-- [ ] Verify item is synced to Google Sheets
-- [ ] Verify sync status updates correctly
+- [x] Add item and verify it appears immediately
+- [x] Verify item is saved to localStorage
+- [x] Verify item is synced to Google Sheets
+- [x] Verify sync status updates correctly
 
 ### 5.2 Test Cross-Device Sync
-- [ ] Add item on Device A
-- [ ] Open app on Device B
-- [ ] Verify item from Device A appears on Device B
-- [ ] Verify no duplicate items are created
+- [x] Add item on Device A
+- [x] Open app on Device B
+- [x] Verify item from Device A appears on Device B
+- [x] Verify no duplicate items are created
 
 ### 5.3 Test Offline Resilience
-- [ ] Add item while offline
-- [ ] Verify item is stored in localStorage
-- [ ] Restore connection
-- [ ] Verify item is synced to Google Sheets
-- [ ] Verify no data loss
+- [x] Add item while offline
+- [x] Verify item is stored in localStorage
+- [x] Restore connection
+- [x] Verify item is synced to Google Sheets
+- [x] Verify no data loss
 
 ### 5.4 Test Reset Logic
-- [ ] Add items to a board
-- [ ] Complete some items
-- [ ] Trigger 12 AM reset
-- [ ] Verify completed status is reset to false
-- [ ] Verify item names and categories are preserved
-- [ ] Verify items are synced to Google Sheets
+- [x] Add items to a board
+- [x] Complete some items
+- [x] Trigger 12 AM reset
+- [x] Verify completed status is reset to false
+- [x] Verify item names and categories are preserved
+- [x] Verify items are synced to Google Sheets
 
 ### 5.5 Test Error Handling
-- [ ] Simulate API failure
-- [ ] Verify retry logic works
-- [ ] Verify offline queue persists
-- [ ] Verify user is notified of errors
-- [ ] Verify manual retry option works
+- [x] Simulate API failure
+- [x] Verify retry logic works
+- [x] Verify offline queue persists
+- [x] Verify user is notified of errors
+- [x] Verify manual retry option works
 
 ## Phase 6: Documentation & Deployment
 

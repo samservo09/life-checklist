@@ -11,6 +11,10 @@
   <div id="app"></div>
   
   <script>
+    // Inject environment variables from .env.local for local testing
+    window.VITE_GOOGLE_SHEET_ID = '1aiYIthWFsTEKjlCrpxjvuHH364tHOdVofDdwxnv79u4';
+    window.VITE_GOOGLE_CLIENT_ID = '611682630550-3bod8q02tmd3sr8b6jmko27v2f3reutt.apps.googleusercontent.com';
+    
     tailwind.config = {
       theme: {
         extend: {
@@ -27,17 +31,33 @@
     }
   </script>
   
-  <!-- Configuration and Core Modules - Load in order with defer -->
+  <!-- Google API Client Library - Load asynchronously for Google Sheets integration -->
+  <!-- This loads independently and is polled by app.js via window.gapi -->
+  <script async src="https://apis.google.com/js/api.js"></script>
+  
+  <!-- Configuration - Load first with defer to set up all constants -->
   <script defer src="config.js"></script>
+  
+  <!-- Data Layer - Load after config -->
   <script defer src="data.js"></script>
+  
+  <!-- OAuth 2.0 Manager - Load after config, before API service -->
+  <script defer src="oauth.js"></script>
+  
+  <!-- State Manager - Load after data, before API service -->
   <script defer src="state.js"></script>
+  
+  <!-- API Service - Load after state manager -->
   <script defer src="api.js"></script>
   
-  <!-- Utilities and Components -->
+  <!-- Utilities - Load after API service -->
   <script defer src="utils.js"></script>
+  
+  <!-- Components - Load after utilities -->
   <script defer src="components.js"></script>
   
-  <!-- Application Logic - Must load last -->
+  <!-- Application Logic - Must load last to ensure all dependencies are ready -->
+  <!-- This script waits for window.gapi to be available before initializing Google Sheets -->
   <script defer src="app.js"></script>
 </body>
 </html>

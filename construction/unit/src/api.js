@@ -63,7 +63,7 @@ class OfflineQueue {
   }
 
   // Process queued operations
-  async processQueue(apiService) {
+  async processQueue(apiService, stateManager = null) {
     if (this.queue.length === 0) {
       return { processed: 0, failed: 0 };
     }
@@ -78,6 +78,17 @@ class OfflineQueue {
       
       try {
         await this.executeOperation(operation, apiService);
+        
+        // Update sync status in state manager if provided
+        if (stateManager && operation.type === 'append' && operation.item) {
+          const item = stateManager.getItem(operation.boardType, operation.item.id);
+          if (item) {
+            item.syncStatus = 'synced';
+            item.syncedAt = new Date().toISOString();
+            stateManager.saveState();
+          }
+        }
+        
         this.remove(i);
         i--; // Adjust index after removal
         processed++;
@@ -124,9 +135,37 @@ class ApiService {
   constructor() {
     this.baseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8000/api';
     this.useGoogleSheets = (typeof isUsingGoogleSheets === 'function') ? isUsingGoogleSheets() : false;
+    this.hasValidCredentials = (typeof hasValidGoogleSheetsCredentials === 'function') ? hasValidGoogleSheetsCredentials() : false;
     this.offlineQueue = new OfflineQueue();
     this.maxRetries = (typeof CONFIG !== 'undefined' && CONFIG.RETRY_MAX_ATTEMPTS) ? CONFIG.RETRY_MAX_ATTEMPTS : 3;
     this.retryBackoffMs = (typeof CONFIG !== 'undefined' && CONFIG.RETRY_BACKOFF_MS) ? CONFIG.RETRY_BACKOFF_MS : 1000;
+    this.accessToken = null;
+    
+    // Log credential status
+    if (this.useGoogleSheets && !this.hasValidCredentials) {
+      console.warn('⚠️ Google Sheets enabled but credentials missing - falling back to local mode');
+      this.useGoogleSheets = false;
+    }
+  }
+
+  /**
+   * Set OAuth 2.0 access token for API calls
+   * @param {string} token - OAuth 2.0 access token
+   */
+  setAccessToken(token) {
+    this.accessToken = token;
+    console.log('Access token set for API service');
+  }
+
+  /**
+   * Get current access token, refreshing if necessary
+   * @returns {string|null} - Access token or null
+   */
+  getAccessToken() {
+    if (typeof oauth2Manager !== 'undefined') {
+      return oauth2Manager.getAccessToken();
+    }
+    return this.accessToken;
   }
 
   // Retry logic with exponential backoff
@@ -169,11 +208,20 @@ class ApiService {
   async fetch(endpoint, options = {}) {
     try {
       const url = `${this.baseUrl}${endpoint}`;
+      
+      // Add Authorization header if access token is available
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+
+      const accessToken = this.getAccessToken();
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
+        headers,
         ...options
       });
 
@@ -616,9 +664,9 @@ class ApiService {
   }
 
   // Process offline queue
-  async processOfflineQueue() {
+  async processOfflineQueue(stateManager = null) {
     try {
-      const result = await this.offlineQueue.processQueue(this);
+      const result = await this.offlineQueue.processQueue(this, stateManager);
       console.log(`Offline queue processing result:`, result);
       return result;
     } catch (error) {

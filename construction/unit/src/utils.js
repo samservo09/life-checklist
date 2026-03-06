@@ -453,6 +453,101 @@ function getLowEnergyItems() {
   return data.boards.chores.items.filter(item => fallbackIds.includes(item.id));
 }
 
+/**
+ * Get current time in Singapore timezone (UTC+8)
+ * @returns {Date} Current time in Singapore
+ */
+function getSingaporeTime() {
+  const now = new Date();
+  // Singapore is UTC+8
+  const singaporeTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Singapore' }));
+  return singaporeTime;
+}
+
+/**
+ * Check if it's 12 AM (midnight) in Singapore timezone
+ * @returns {boolean} True if current time is between 12:00 AM and 12:01 AM Singapore time
+ */
+function isMidnightSingapore() {
+  const singaporeTime = getSingaporeTime();
+  const hours = singaporeTime.getHours();
+  const minutes = singaporeTime.getMinutes();
+  
+  // Check if it's 12 AM (00:00 - 00:01)
+  return hours === 0 && minutes === 0;
+}
+
+/**
+ * Calculate milliseconds until next 12 AM Singapore time
+ * @returns {number} Milliseconds until next midnight
+ */
+function getMillisecondsUntilMidnightSingapore() {
+  const singaporeTime = getSingaporeTime();
+  
+  // Create a date for tomorrow at 12 AM Singapore time
+  const tomorrow = new Date(singaporeTime);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  
+  // Calculate difference
+  const msUntilMidnight = tomorrow.getTime() - singaporeTime.getTime();
+  
+  return msUntilMidnight;
+}
+
+/**
+ * Schedule daily reset at 12 AM Singapore time
+ * @param {StateManager} stateManager - The state manager instance
+ * @returns {number} Timeout ID for the scheduled reset
+ */
+function scheduleDailyResetAtMidnightSingapore(stateManager) {
+  if (!stateManager) {
+    console.error('StateManager is required for scheduling reset');
+    return null;
+  }
+
+  // Calculate time until next midnight
+  const msUntilMidnight = getMillisecondsUntilMidnightSingapore();
+  
+  console.log(`⏰ Daily reset scheduled for 12 AM Singapore time (in ${Math.round(msUntilMidnight / 1000 / 60)} minutes)`);
+  
+  // Schedule the reset
+  const timeoutId = setTimeout(async () => {
+    console.log('🔄 Triggering daily reset at 12 AM Singapore time...');
+    
+    try {
+      // Reset all boards
+      const boards = Object.values(CONFIG.BOARDS);
+      for (const boardType of boards) {
+        await stateManager.resetBoardItems(boardType);
+      }
+      
+      console.log('✓ Daily reset completed successfully');
+      
+      // Re-schedule for next day
+      scheduleDailyResetAtMidnightSingapore(stateManager);
+    } catch (error) {
+      console.error('Failed to execute daily reset:', error);
+      
+      // Re-schedule for next day even if reset failed
+      scheduleDailyResetAtMidnightSingapore(stateManager);
+    }
+  }, msUntilMidnight);
+  
+  return timeoutId;
+}
+
+/**
+ * Stop the scheduled daily reset
+ * @param {number} timeoutId - The timeout ID returned by scheduleDailyResetAtMidnightSingapore
+ */
+function stopScheduledReset(timeoutId) {
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    console.log('Daily reset scheduling stopped');
+  }
+}
+
 
 // Export for use in Node.js
 if (typeof module !== 'undefined' && module.exports) {
@@ -474,6 +569,11 @@ if (typeof module !== 'undefined' && module.exports) {
     throttle,
     getLocalStorageSize,
     toggleLowEnergyMode,
-    getLowEnergyItems
+    getLowEnergyItems,
+    getSingaporeTime,
+    isMidnightSingapore,
+    getMillisecondsUntilMidnightSingapore,
+    scheduleDailyResetAtMidnightSingapore,
+    stopScheduledReset
   };
 }
