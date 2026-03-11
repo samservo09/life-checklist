@@ -18,56 +18,16 @@ class OAuth2Manager {
    * Initialize OAuth 2.0 with Google API client
    * @param {string} clientId - OAuth 2.0 Client ID from Google Cloud Console
    * @returns {Promise<boolean>} - True if initialization successful
+   * 
+   * NOTE: OAuth is NOT needed for this app. The backend uses a service account
+   * (GOOGLE_SERVICE_ACCOUNT_KEY) to authenticate with Google Sheets. The frontend
+   * only calls /api/sheets endpoints, which handle all authentication server-side.
+   * This method always returns false to skip OAuth initialization.
    */
   async initialize(clientId) {
-    if (!clientId || clientId === 'LOCAL_DEV_MODE') {
-      console.log('OAuth 2.0 initialization skipped - using local dev mode');
-      this.isInitialized = false;
-      return false;
-    }
-
-    try {
-      // Wait for Google API client library to load
-      await this.waitForGapi();
-
-      this.clientId = clientId;
-
-      // Initialize gapi.auth2
-      this.authInstance = await gapi.auth2.init({
-        client_id: clientId,
-        scope: this.scopes.join(' ')
-      });
-
-      console.log('OAuth 2.0 initialized successfully');
-      this.isInitialized = true;
-
-      // Check if user is already signed in
-      if (this.authInstance.isSignedIn.get()) {
-        console.log('User already signed in');
-        this.storeToken(this.authInstance.currentUser.get().getAuthResponse());
-      }
-
-      // Listen for sign-in state changes
-      this.authInstance.isSignedIn.listen(isSignedIn => {
-        if (isSignedIn) {
-          console.log('User signed in');
-          const authResponse = this.authInstance.currentUser.get().getAuthResponse();
-          this.storeToken(authResponse);
-          // Emit event for app to handle
-          window.dispatchEvent(new CustomEvent('oauth-signin', { detail: { isSignedIn: true } }));
-        } else {
-          console.log('User signed out');
-          this.clearToken();
-          window.dispatchEvent(new CustomEvent('oauth-signout', { detail: { isSignedIn: false } }));
-        }
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize OAuth 2.0:', error);
-      this.isInitialized = false;
-      return false;
-    }
+    console.log('ℹ️ OAuth 2.0 not needed - backend uses service account authentication');
+    this.isInitialized = false;
+    return false;
   }
 
   /**

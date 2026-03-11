@@ -1,49 +1,27 @@
 // config.js - Environment-based configuration with graceful degradation
-// Helper to safely read environment variables
-function getEnvVar(key, defaultValue = null) {
-  // Try process.env (Node.js/bundlers)
-  if (typeof process !== 'undefined' && process.env) {
-    const value = process.env[key];
-    if (value) return value;
-  }
-  
-  // Try window (browser globals)
-  if (typeof window !== 'undefined' && window[key]) {
-    return window[key];
-  }
-  
-  // Try import.meta.env (Vite) - only in browser context
-  try {
-    if (typeof globalThis !== 'undefined' && globalThis.import && globalThis.import.meta && globalThis.import.meta.env) {
-      const value = globalThis.import.meta.env[key];
-      if (value) return value;
-    }
-  } catch (e) {
-    // Silently ignore if import.meta is not available
-  }
-  
-  return defaultValue;
-}
 
-// Determine if Google Sheets credentials are available
-const SHEET_ID = getEnvVar('VITE_GOOGLE_SHEET_ID') || getEnvVar('GOOGLE_SHEET_ID');
-const CLIENT_ID = getEnvVar('VITE_GOOGLE_CLIENT_ID') || getEnvVar('GOOGLE_CLIENT_ID');
-const USE_GOOGLE_SHEETS = !!(SHEET_ID && CLIENT_ID && SHEET_ID !== 'LOCAL_DEV_MODE' && CLIENT_ID !== 'LOCAL_DEV_MODE');
+// Detect if running on production (Vercel) or localhost
+// The backend uses a service account, so we only need to check the domain
+const IS_PRODUCTION = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+const USE_GOOGLE_SHEETS = IS_PRODUCTION;
 
 // Log configuration status for debugging
 if (typeof console !== 'undefined') {
   if (USE_GOOGLE_SHEETS) {
-    console.log('✓ Google Sheets integration enabled');
+    console.log('✓ Google Sheets integration enabled (production domain detected)');
   } else {
-    console.log('ℹ️ Google Sheets credentials not found - using Local Mode (localStorage)');
+    console.log('ℹ️ Using Local Mode (localStorage) - localhost or non-production domain');
   }
 }
 
 const CONFIG = {
-  SHEET_ID: SHEET_ID || 'LOCAL_DEV_MODE',
-  CLIENT_ID: CLIENT_ID || 'LOCAL_DEV_MODE', // OAuth 2.0 Client ID for Google Sheets API
+  // Note: SHEET_ID and CLIENT_ID are not needed in the frontend.
+  // The backend uses a service account (GOOGLE_SERVICE_ACCOUNT_KEY) for all Google Sheets operations.
+  // The frontend only calls /api/sheets endpoints, which handle authentication server-side.
+  SHEET_ID: '',
+  CLIENT_ID: '',
   GOOGLE_SHEETS_API_URL: 'https://sheets.googleapis.com/v4/spreadsheets',
-  OAUTH_REDIRECT_URI: (typeof window !== 'undefined' && window.location) ? window.location.origin : 'http://localhost:3000', // OAuth 2.0 redirect URI
+  OAUTH_REDIRECT_URI: (typeof window !== 'undefined' && window.location) ? window.location.origin : 'http://localhost:3000',
   OAUTH_SCOPES: [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive.readonly'
@@ -51,7 +29,7 @@ const CONFIG = {
   APP_NAME: 'Life OS Unit',
   IS_DEV: true,
   LOCAL_STORAGE_KEY: 'lifeOS_data',
-  API_BASE_URL: (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? 'http://localhost:8001/api' : '/api',
+  API_BASE_URL: IS_PRODUCTION ? '/api/sheets' : 'http://localhost:8001/api',
   USE_GOOGLE_SHEETS: USE_GOOGLE_SHEETS,
   BOARDS: {
     CHORES: 'chores',
@@ -93,9 +71,9 @@ function isUsingGoogleSheets() {
 }
 
 function hasValidGoogleSheetsCredentials() {
-  return CONFIG.USE_GOOGLE_SHEETS && 
-         CONFIG.SHEET_ID !== 'LOCAL_DEV_MODE' && 
-         CONFIG.CLIENT_ID !== 'LOCAL_DEV_MODE';
+  // On production, we always have valid credentials (service account on backend)
+  // On localhost, we use local mode
+  return CONFIG.USE_GOOGLE_SHEETS;
 }
 
 // Export for browser and Node.js

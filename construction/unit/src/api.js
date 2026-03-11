@@ -153,19 +153,21 @@ class ApiService {
    * @param {string} token - OAuth 2.0 access token
    */
   setAccessToken(token) {
-    this.accessToken = token;
-    console.log('Access token set for API service');
+    // Note: Access token is not needed for this app.
+    // The backend uses a service account for authentication.
+    // This method is kept for backward compatibility but does nothing.
+    console.log('ℹ️ Access token not needed - backend uses service account authentication');
   }
 
   /**
    * Get current access token, refreshing if necessary
    * @returns {string|null} - Access token or null
+   * 
+   * NOTE: Access token is not needed for this app. The backend uses a service account
+   * for authentication. This method is kept for backward compatibility but always returns null.
    */
   getAccessToken() {
-    if (typeof oauth2Manager !== 'undefined') {
-      return oauth2Manager.getAccessToken();
-    }
-    return this.accessToken;
+    return null;
   }
 
   // Retry logic with exponential backoff
@@ -209,16 +211,12 @@ class ApiService {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       
-      // Add Authorization header if access token is available
+      // Note: No Authorization header needed. The backend uses a service account
+      // for authentication. All requests are authenticated server-side.
       const headers = {
         'Content-Type': 'application/json',
         ...options.headers
       };
-
-      const accessToken = this.getAccessToken();
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
 
       const response = await fetch(url, {
         headers,
