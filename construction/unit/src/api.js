@@ -133,7 +133,7 @@ class OfflineQueue {
 
 class ApiService {
   constructor() {
-    this.baseUrl = '/api/sheets';
+    this.baseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '/api/sheets';
     this.useGoogleSheets = (typeof isUsingGoogleSheets === 'function') ? isUsingGoogleSheets() : false;
     this.hasValidCredentials = (typeof hasValidGoogleSheetsCredentials === 'function') ? hasValidGoogleSheetsCredentials() : false;
     this.offlineQueue = new OfflineQueue();
