@@ -1,0 +1,17 @@
+{
+  "name": "life-checklist",
+  "version": "1.0.0",
+  "description": "Life OS - Personal checklist and inventory management",
+  "main": "index.js",
+  "scripts": {
+    "dev": "python construction/unit/server.py",
+    "test": "node construction/unit/src/test-runner.js"
+  },
+  "dependencies": {
+    "googleapis": "^118.0.0"
+  },
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,57 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'No build needed for static SPA'",
+  "outputDirectory": "construction/unit/src",
+  "public": true,
+  "functions": {
+    "api/sheets.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "api/reset.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/reset",
+      "schedule": "0 16 * * *"
+    }
+  ],
+  "env": {
+    "VITE_GOOGLE_SHEET_ID": "@vite_google_sheet_id",
+    "GOOGLE_SERVICE_ACCOUNT_KEY": "@google_service_account_key",
+    "CRON_SECRET": "@cron_secret"
+  }
+}

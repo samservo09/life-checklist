@@ -133,7 +133,7 @@ class OfflineQueue {
 
 class ApiService {
   constructor() {
-    this.baseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8000/api';
+    this.baseUrl = '/api/sheets';
     this.useGoogleSheets = (typeof isUsingGoogleSheets === 'function') ? isUsingGoogleSheets() : false;
     this.hasValidCredentials = (typeof hasValidGoogleSheetsCredentials === 'function') ? hasValidGoogleSheetsCredentials() : false;
     this.offlineQueue = new OfflineQueue();
@@ -263,14 +263,12 @@ class ApiService {
   // Append item to Google Sheet (new row)
   async appendItem(boardType, item) {
     if (!this.useGoogleSheets) {
-      // Local mock - just return the item with timestamp
       return {
         ...item,
         timestamp: new Date().toISOString()
       };
     }
 
-    // Validate input
     if (!boardType || !item || !item.id || !item.name) {
       throw new Error('Invalid item: boardType, item.id, and item.name are required');
     }
@@ -291,7 +289,7 @@ class ApiService {
 
     try {
       return await this.retryWithBackoff(async () => {
-        return await this.fetch('/items/append', {
+        return await this.fetch(`${this.baseUrl}?action=append`, {
           method: 'POST',
           body: JSON.stringify({
             boardType,
@@ -301,7 +299,6 @@ class ApiService {
       });
     } catch (error) {
       console.error(`Failed to append item to ${boardType} sheet after retries:`, error);
-      // Queue for later retry
       this.offlineQueue.add(operation);
       throw error;
     }
@@ -355,10 +352,11 @@ class ApiService {
 
     try {
       return await this.retryWithBackoff(async () => {
-        return await this.fetch(`/items/${itemId}`, {
-          method: 'PATCH',
+        return await this.fetch(`${this.baseUrl}?action=update`, {
+          method: 'POST',
           body: JSON.stringify({
             boardType,
+            itemId,
             updates: operation.updates
           })
         });
@@ -444,37 +442,31 @@ class ApiService {
   // Fetch all items from a specific board/sheet in Google Sheets
   async fetchBoardFromSheet(boardType) {
     if (!this.useGoogleSheets) {
-      // Local mock - return empty array when not using Google Sheets
       return [];
     }
 
-    // Validate input
     if (!boardType) {
       throw new Error('Invalid fetch: boardType is required');
     }
 
     try {
       const response = await this.retryWithBackoff(async () => {
-        return await this.fetch(`/boards/${boardType}`, {
+        return await this.fetch(`${this.baseUrl}?board=${boardType}`, {
           method: 'GET'
         });
       });
 
-      // Ensure response is an array of items
       if (Array.isArray(response)) {
         return response;
       }
 
-      // If response has an items property, return that
       if (response && Array.isArray(response.items)) {
         return response.items;
       }
 
-      // Otherwise return empty array
       return [];
     } catch (error) {
       console.error(`Failed to fetch board ${boardType} from Google Sheets after retries:`, error);
-      // Return empty array on failure to allow app to continue with local data
       return [];
     }
   }
@@ -517,11 +509,11 @@ class ApiService {
 
     try {
       return await this.retryWithBackoff(async () => {
-        return await this.fetch('/items/batch-append', {
+        return await this.fetch(`${this.baseUrl}?action=append`, {
           method: 'POST',
           body: JSON.stringify({
             boardType,
-            items: operation.items
+            item: operation.items[0]
           })
         });
       });
@@ -568,13 +560,23 @@ class ApiService {
 
     try {
       return await this.retryWithBackoff(async () => {
-        return await this.fetch('/items/batch-update', {
-          method: 'PATCH',
-          body: JSON.stringify({
-            boardType,
-            items: operation.items
-          })
-        });
+        // Make individual update calls for each item
+        const results = [];
+        for (const item of operation.items) {
+          const result = await this.fetch(`${this.baseUrl}?action=update`, {
+            method: 'POST',
+            body: JSON.stringify({
+              boardType,
+              itemId: item.id,
+              updates: {
+                completed: item.completed,
+                completedAt: item.completedAt
+              }
+            })
+          });
+          results.push(result);
+        }
+        return { success: true, results };
       });
     } catch (error) {
       console.error(`Failed to batch update items in ${boardType} sheet after retries:`, error);
@@ -630,10 +632,11 @@ class ApiService {
 
     try {
       return await this.retryWithBackoff(async () => {
-        return await this.fetch(`/items/${itemId}/toggle`, {
+        return await this.fetch(`${this.baseUrl}?action=toggle`, {
           method: 'POST',
           body: JSON.stringify({
-            boardType
+            boardType,
+            itemId
           })
         });
       });
