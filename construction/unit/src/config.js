@@ -1,4 +1,5 @@
 // config.js - Environment-based configuration with graceful degradation
+// Last updated: 2025-03-13 - Production domain detection
 
 // Detect if running on production (Vercel) or localhost
 // The backend uses a service account, so we only need to check the domain
